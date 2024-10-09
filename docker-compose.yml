@@ -1,0 +1,29 @@
+version: "2"
+
+services:
+  postgres-traffic:
+    image: postgres:13
+    container_name: db-traffic
+    hostname: postgres_traffic
+    ports:
+      - "5431:5432"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=traffic
+    restart: always
+    volumes:
+      - ./postgresDB/backup/:/home/
+    profiles:
+      - db
+
+  kafka:
+    hostname: kafka
+    image: bitnami/kafka:3.2
+    container_name: kafka
+    ports:
+      - "9094:9094"
+    env_file:
+      - ./kafka.env
+    profiles:
+      - db
