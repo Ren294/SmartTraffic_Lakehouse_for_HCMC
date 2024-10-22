@@ -19,6 +19,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    profiles:
+      - one
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.3.10
@@ -33,12 +35,13 @@ services:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: broker:29092
       SCHEMA_REGISTRY_LISTENERS: http://0.0.0.0:8081
-
     healthcheck:
       start_period: 10s
       interval: 10s
       retries: 20
       test: curl --user superUser:superUser --fail --silent --insecure http://localhost:8081/subjects --output /dev/null || exit 1
+    profiles:
+      - one
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.10
@@ -54,6 +57,8 @@ services:
       start_period: 10s
       retries: 20
       interval: 10s
+    profiles:
+      - one
 
   broker:
     image: confluentinc/cp-kafka:7.3.10
@@ -84,6 +89,8 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
+    profiles:
+      - one
 
   rest-proxy:
     image: confluentinc/cp-kafka-rest:7.3.10
@@ -98,6 +105,8 @@ services:
       KAFKA_REST_HOST_NAME: rest-proxy
       KAFKA_REST_BOOTSTRAP_SERVERS: "broker:29092"
       KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+    profiles:
+      - one
 
   debezium:
     image: debezium/connect:3.0
@@ -135,6 +144,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    profiles:
+      - one
 
   debezium-ui:
     image: debezium/debezium-ui:2.2
@@ -148,3 +159,34 @@ services:
       - "8080:8080"
     environment:
       KAFKA_CONNECT_URIS: http://debezium:8083
+    profiles:
+      - one
+
+  nifi:
+    image: nghia294/nifi:1.27.0
+    container_name: nifi
+    hostname: nifi
+    ports:
+      - 8443:8443
+    volumes:
+      - ./nifi/database_repository:/opt/nifi/nifi-current/database_repository
+      - ./nifi/flowfile_repository:/opt/nifi/nifi-current/flowfile_repository
+      - ./nifi/content_repository:/opt/nifi/nifi-current/content_repository
+      - ./nifi/provenance_repository:/opt/nifi/nifi-current/provenance_repository
+      - ./nifi/state:/opt/nifi/nifi-current/state
+      - ./nifi/logs:/opt/nifi/nifi-current/logs
+      - ./nifi/data:/home/data
+
+    environment:
+      NIFI_WEB_HTTP_PORT: 8443
+      NIFI_SECURITY_USER_AUTHORIZER: single-user-authorizer
+      NIFI_SECURITY_USER_LOGIN_IDENTITY_PROVIDER: single-user-provider
+      NIFI_SECURITY_ALLOW_ANONYMOUS_AUTHENTICATION: true
+    networks:
+      - ren294_network
+    profiles:
+      - nifi
+
+networks:
+  ren294_network:
+    driver: bridge
