@@ -19,6 +19,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ren294_network
     profiles:
       - one
 
@@ -40,6 +42,8 @@ services:
       interval: 10s
       retries: 20
       test: curl --user superUser:superUser --fail --silent --insecure http://localhost:8081/subjects --output /dev/null || exit 1
+    networks:
+      - ren294_network
     profiles:
       - one
 
@@ -57,6 +61,8 @@ services:
       start_period: 10s
       retries: 20
       interval: 10s
+    networks:
+      - ren294_network
     profiles:
       - one
 
@@ -89,6 +95,8 @@ services:
       interval: 5s
       timeout: 10s
       retries: 10
+    networks:
+      - ren294_network
     profiles:
       - one
 
@@ -105,6 +113,8 @@ services:
       KAFKA_REST_HOST_NAME: rest-proxy
       KAFKA_REST_BOOTSTRAP_SERVERS: "broker:29092"
       KAFKA_REST_LISTENERS: "http://0.0.0.0:8082"
+    networks:
+      - ren294_network
     profiles:
       - one
 
@@ -144,6 +154,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    networks:
+      - ren294_network
     profiles:
       - one
 
@@ -159,6 +171,8 @@ services:
       - "8080:8080"
     environment:
       KAFKA_CONNECT_URIS: http://debezium:8083
+    networks:
+      - ren294_network
     profiles:
       - one
 
@@ -176,7 +190,6 @@ services:
       - ./nifi/state:/opt/nifi/nifi-current/state
       - ./nifi/logs:/opt/nifi/nifi-current/logs
       - ./nifi/data:/home/data
-
     environment:
       NIFI_WEB_HTTP_PORT: 8443
       NIFI_SECURITY_USER_AUTHORIZER: single-user-authorizer
@@ -187,6 +200,24 @@ services:
     profiles:
       - nifi
 
+  minio:
+    container_name: minio
+    image: minio/minio
+    hostname: minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ren294
+      MINIO_ROOT_PASSWORD: trungnghia294
+    volumes:
+      - ./minio/data:/data
+    command: server /data --console-address ":9001"
+    networks:
+      - ren294_network
+    profiles:
+      - minio
+      - nifi
 networks:
   ren294_network:
     driver: bridge
