@@ -201,7 +201,7 @@ services:
       - nifi
 
   minio:
-    container_name: minio
+    container_name: storage
     image: minio/minio
     hostname: minio
     ports:
@@ -218,6 +218,41 @@ services:
     profiles:
       - minio
       - nifi
+
+  jobmanager:
+    image: flink:java8
+    container_name: flink-jobmanager
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    volumes:
+      - ./flink/job/:/opt/flink/usrlib/
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+    networks:
+      - ren294_network
+    profiles:
+      - flink
+
+  taskmanager:
+    image: flink:java8
+    container_name: flink-taskmanager
+    depends_on:
+      - jobmanager
+    command: taskmanager
+    scale: 1
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 2
+    networks:
+      - ren294_network
+    profiles:
+      - flink
+
 networks:
   ren294_network:
     driver: bridge
