@@ -199,6 +199,7 @@ services:
       - ren294_network
     profiles:
       - nifi
+      - ex1
 
   minio:
     container_name: storage
@@ -235,6 +236,7 @@ services:
       - ren294_network
     profiles:
       - flink
+      - ex1
 
   taskmanager:
     image: flink:java8
@@ -252,6 +254,7 @@ services:
       - ren294_network
     profiles:
       - flink
+      - ex1
 
   pinot-zookeeper:
     image: zookeeper:3.9.2
