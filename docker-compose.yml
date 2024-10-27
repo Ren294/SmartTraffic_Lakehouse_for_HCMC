@@ -339,6 +339,7 @@ services:
       - pinot
 
   redis:
+    container_name: redis_traffic
     image: redis/redis-stack:7.4.0-v0-arm64
     ports:
       - 6379:6379
