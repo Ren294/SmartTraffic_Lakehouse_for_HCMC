@@ -337,6 +337,7 @@ services:
       - ren294_network
     profiles:
       - pinot
+
   redis:
     image: redis/redis-stack:7.4.0-v0-arm64
     ports:
@@ -350,6 +351,7 @@ services:
       - ren294_network
     profiles:
       - ex1
+
 networks:
   ren294_network:
     driver: bridge
