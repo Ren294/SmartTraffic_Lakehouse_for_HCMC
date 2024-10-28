@@ -1,0 +1,2 @@
+-- CREATE SCHEMA IF NOT EXISTS parking;
+-- CREATE SCHEMA IF NOT EXISTS gasstation;

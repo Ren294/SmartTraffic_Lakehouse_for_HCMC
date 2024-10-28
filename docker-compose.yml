@@ -10,8 +10,10 @@ services:
       - POSTGRES_PASSWORD=postgres
       - POSTGRES_DB=traffic
     volumes:
-      - ./postgres_init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgresDB/postgres_init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./postgresDB/postgres_init/restore.sh:/docker-entrypoint-initdb.d/restore_schemas.sh
       - ./postgresDB/backup/:/home/
+      - ./postgresDB/postgres_init/postgresql.conf:/etc/postgresql/postgresql.conf
     restart: always
     command: ["postgres", "-c", "wal_level=logical"]
     healthcheck:
@@ -138,6 +140,7 @@ services:
     profiles:
       - redpanda
       - ex1
+      - one
 
   debezium:
     image: debezium/connect:3.0
@@ -221,6 +224,7 @@ services:
     profiles:
       - nifi
       - ex1
+      - one
 
   minio:
     container_name: storage
@@ -352,6 +356,7 @@ services:
       - ren294_network
     profiles:
       - ex1
+      - one
 
 networks:
   ren294_network:
