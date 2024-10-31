@@ -1,3 +1,23 @@
+x-airflow-common: &airflow-common
+  image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.10.2-python3.12}
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__FERNET_KEY: ""
+    AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "true"
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.basic_auth,airflow.api.auth.backend.session"
+    AIRFLOW__SCHEDULER__ENABLE_HEALTH_CHECK: "true"
+  volumes:
+    - ./airflow/dags:/opt/airflow/dags
+    - ./airflow/logs:/opt/airflow/logs
+    - ./airflow/plugins:/opt/airflow/plugins
+    - ./meltano:/meltano
+  user: "${AIRFLOW_UID:-50000}:0"
+  depends_on:
+    postgres:
+      condition: service_healthy
+
 services:
   postgres-traffic:
     image: postgres:13
@@ -25,6 +45,7 @@ services:
       - ren294_network
     profiles:
       - one
+      - etl
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.3.10
@@ -224,7 +245,6 @@ services:
     profiles:
       - nifi
       - ex1
-      - one
 
   minio:
     container_name: storage
@@ -244,6 +264,8 @@ services:
     profiles:
       - minio
       - nifi
+      - etl
+      - one
 
   jobmanager:
     image: flink:java8
@@ -262,6 +284,7 @@ services:
     profiles:
       - flink
       - ex1
+      - one
 
   taskmanager:
     image: flink:java8
@@ -280,6 +303,7 @@ services:
     profiles:
       - flink
       - ex1
+      - one
 
   pinot-zookeeper:
     image: zookeeper:3.9.2
@@ -356,6 +380,42 @@ services:
       - ren294_network
     profiles:
       - ex1
+
+  seatunnel-master:
+    image: apache/seatunnel
+    container_name: seatunnel_master
+    environment:
+      - ST_DOCKER_MEMBER_LIST=seatunnel-master,seatunnel-worker1
+    entrypoint: >
+      /bin/sh -c "
+      /opt/seatunnel/bin/seatunnel-cluster.sh -r master
+      "
+    volumes:
+      - ./seatunnel:/config
+    ports:
+      - "5801:5801"
+    networks:
+      - ren294_network
+    profiles:
+      - seatunnel
+      - etl
+      - one
+  seatunnel-worker1:
+    image: apache/seatunnel
+    container_name: seatunnel_worker_1
+    environment:
+      - ST_DOCKER_MEMBER_LIST=seatunnel-master,seatunnel-worker1
+    entrypoint: >
+      /bin/sh -c "
+      /opt/seatunnel/bin/seatunnel-cluster.sh -r worker
+      "
+    depends_on:
+      - seatunnel-master
+    networks:
+      - ren294_network
+    profiles:
+      - seatunnel
+      - etl
       - one
 
 networks:

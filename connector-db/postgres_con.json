@@ -19,7 +19,7 @@
 
     "topic.prefix": "postgres_traffic",
 
-    "database.history.kafka.bootstrap.servers": "kafka:9092",
+    "database.history.kafka.bootstrap.servers": "broker:29092",
     "database.history.kafka.topic": "schema-changes.inventory",
 
     "key.converter": "org.apache.kafka.connect.json.JsonConverter",
