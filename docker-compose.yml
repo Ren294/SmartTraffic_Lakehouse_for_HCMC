@@ -245,6 +245,7 @@ services:
     profiles:
       - nifi
       - ex1
+      - one
 
   minio:
     container_name: storage
@@ -266,6 +267,7 @@ services:
       - nifi
       - etl
       - one
+      - ex1
 
   jobmanager:
     image: flink:java8
@@ -380,42 +382,6 @@ services:
       - ren294_network
     profiles:
       - ex1
-
-  seatunnel-master:
-    image: apache/seatunnel
-    container_name: seatunnel_master
-    environment:
-      - ST_DOCKER_MEMBER_LIST=seatunnel-master,seatunnel-worker1
-    entrypoint: >
-      /bin/sh -c "
-      /opt/seatunnel/bin/seatunnel-cluster.sh -r master
-      "
-    volumes:
-      - ./seatunnel:/config
-    ports:
-      - "5801:5801"
-    networks:
-      - ren294_network
-    profiles:
-      - seatunnel
-      - etl
-      - one
-  seatunnel-worker1:
-    image: apache/seatunnel
-    container_name: seatunnel_worker_1
-    environment:
-      - ST_DOCKER_MEMBER_LIST=seatunnel-master,seatunnel-worker1
-    entrypoint: >
-      /bin/sh -c "
-      /opt/seatunnel/bin/seatunnel-cluster.sh -r worker
-      "
-    depends_on:
-      - seatunnel-master
-    networks:
-      - ren294_network
-    profiles:
-      - seatunnel
-      - etl
       - one
 
 networks:
