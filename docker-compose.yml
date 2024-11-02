@@ -277,10 +277,20 @@ services:
     command: jobmanager
     volumes:
       - ./flink/job/:/opt/flink/usrlib/
+      # - ./flink/config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
+        s3.endpoint: http://minio:9000
+        s3.path.style.access: true
+        s3.access-key: ren294
+        s3.secret-key: trungnghia294
+        fs.s3a.endpoint: http://minio:9000
+        fs.s3a.access.key: ren294
+        fs.s3a.secret.key: trungnghia294
+        fs.s3a.path.style.access: true
+        fs.s3a.connection.ssl.enabled: false
     networks:
       - ren294_network
     profiles:
@@ -295,11 +305,22 @@ services:
       - jobmanager
     command: taskmanager
     scale: 1
+    # volumes:
+    #   - ./flink/config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
+        s3.endpoint: http://minio:9000
+        s3.path.style.access: true
+        s3.access-key: ren294
+        s3.secret-key: trungnghia294
+        fs.s3a.endpoint: http://minio:9000
+        fs.s3a.access.key: ren294
+        fs.s3a.secret.key: trungnghia294
+        fs.s3a.path.style.access: true
+        fs.s3a.connection.ssl.enabled: false
     networks:
       - ren294_network
     profiles:

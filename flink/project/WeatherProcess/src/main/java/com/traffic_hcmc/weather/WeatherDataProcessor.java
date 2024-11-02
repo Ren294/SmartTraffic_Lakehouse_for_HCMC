@@ -21,7 +21,9 @@ import java.util.Properties;
 public class WeatherDataProcessor {
     private static final DecimalFormat df = new DecimalFormat("#.##");
     private static final JedisPool jedisPool = new JedisPool(new JedisPoolConfig(), "redis", 6379);
-
+    private static String cleanValue(String value) {
+        return value == null ? "" : value.replace(",", "").trim();
+    }
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
@@ -111,7 +113,7 @@ public class WeatherDataProcessor {
                             }
 
                             // Original CSV processing for Kafka
-                            csv.append(root.get("datetime").asText()).append(",");
+                            csv.append(cleanValue(root.get("datetime").asText())).append(",");
                             csv.append(root.get("datetimeEpoch").asLong()).append(",");
                             csv.append(df.format(root.get("temp").asDouble())).append(",");
                             csv.append(df.format(root.get("feelslike").asDouble())).append(",");
@@ -122,14 +124,14 @@ public class WeatherDataProcessor {
                             csv.append(df.format(root.get("snow").asDouble())).append(",");
                             csv.append(df.format(root.get("snowdepth").asDouble())).append(",");
 
-                            // Handle preciptype
+                            // Handle preciptype with comma removal
                             JsonNode preciptype = root.get("preciptype");
                             if (preciptype.isNull()) {
                                 csv.append("").append(",");
                             } else if (preciptype.isArray() && preciptype.size() > 0) {
-                                csv.append(preciptype.get(0).asText()).append(",");
+                                csv.append(cleanValue(preciptype.get(0).asText())).append(",");
                             } else if (preciptype.isTextual()) {
-                                csv.append(preciptype.asText()).append(",");
+                                csv.append(cleanValue(preciptype.asText())).append(",");
                             } else {
                                 csv.append("").append(",");
                             }
@@ -145,42 +147,42 @@ public class WeatherDataProcessor {
                             csv.append(df.format(root.get("solarenergy").asDouble())).append(",");
                             csv.append(root.get("uvindex").asInt()).append(",");
                             csv.append(root.get("severerisk").asInt()).append(",");
-                            csv.append(root.get("conditions").asText()).append(",");
-                            csv.append(root.get("icon").asText()).append(",");
-                            csv.append(root.get("source").asText()).append(",");
-                            csv.append(root.get("timezone").asText()).append(",");
-                            csv.append(root.get("name").asText()).append(",");
+                            csv.append(cleanValue(root.get("conditions").asText())).append(",");
+                            csv.append(cleanValue(root.get("icon").asText())).append(",");
+                            csv.append(cleanValue(root.get("source").asText())).append(",");
+                            csv.append(cleanValue(root.get("timezone").asText())).append(",");
+                            csv.append(cleanValue(root.get("name").asText())).append(",");
                             csv.append(df.format(root.get("latitude").asDouble())).append(",");
                             csv.append(df.format(root.get("longitude").asDouble())).append(",");
-                            csv.append(root.get("resolvedAddress").asText()).append(",");
-                            csv.append(root.get("date").asText()).append(",");
-                            csv.append(root.get("address").asText()).append(",");
+                            csv.append(cleanValue(root.get("resolvedAddress").asText())).append(",");
+                            csv.append(cleanValue(root.get("date").asText())).append(",");
+                            csv.append(cleanValue(root.get("address").asText())).append(",");
                             csv.append(root.get("tzoffset").asInt()).append(",");
 
-                            // Process day fields
+                            // Process day fields with comma removal
                             JsonNode day = root.get("day");
                             csv.append(df.format(day.get("visibility").asDouble())).append(",");
                             csv.append(df.format(day.get("cloudcover").asDouble())).append(",");
                             csv.append(day.get("uvindex").asInt()).append(",");
-                            csv.append(day.get("description").asText()).append(",");
+                            csv.append(cleanValue(day.get("description").asText())).append(",");
                             csv.append(df.format(day.get("tempmin").asDouble())).append(",");
                             csv.append(df.format(day.get("windspeed").asDouble())).append(",");
-                            csv.append(day.get("icon").asText()).append(",");
+                            csv.append(cleanValue(day.get("icon").asText())).append(",");
                             csv.append(df.format(day.get("precip").asDouble())).append(",");
                             csv.append(df.format(day.get("tempmax").asDouble())).append(",");
                             csv.append(df.format(day.get("precipcover").asDouble())).append(",");
                             csv.append(df.format(day.get("pressure").asDouble())).append(",");
-                            csv.append(day.get("preciptype").asText()).append(",");
+                            csv.append(cleanValue(day.get("preciptype").asText())).append(",");
                             csv.append(df.format(day.get("humidity").asDouble())).append(",");
-                            csv.append(day.get("conditions").asText()).append(",");
+                            csv.append(cleanValue(day.get("conditions").asText())).append(",");
                             csv.append(df.format(day.get("feelslike").asDouble())).append(",");
                             csv.append(df.format(day.get("dew").asDouble())).append(",");
-                            csv.append(day.get("sunrise").asText()).append(",");
+                            csv.append(cleanValue(day.get("sunrise").asText())).append(",");
                             csv.append(day.get("sunriseEpoch").asLong()).append(",");
                             csv.append(df.format(day.get("feelslikemax").asDouble())).append(",");
                             csv.append(df.format(day.get("windgust").asDouble())).append(",");
                             csv.append(df.format(day.get("solarenergy").asDouble())).append(",");
-                            csv.append(day.get("sunset").asText()).append(",");
+                            csv.append(cleanValue(day.get("sunset").asText())).append(",");
                             csv.append(df.format(day.get("snowdepth").asDouble())).append(",");
                             csv.append(day.get("sunsetEpoch").asLong()).append(",");
                             csv.append(day.get("severerisk").asInt()).append(",");
