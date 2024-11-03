@@ -11,11 +11,11 @@ def create_spark_session():
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.hudi.catalog.HoodieCatalog") \
         .config("spark.kryo.registrator", "org.apache.spark.HoodieSparkKryoRegistrar") \
         .config("spark.jars.packages",
-                "org.apache.hudi:hudi-spark3.5-bundle_2.12:0.15.0,"
+                "org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,"
                 "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,"
                 "org.apache.hadoop:hadoop-aws:3.3.1,"
                 "com.amazonaws:aws-java-sdk-bundle:1.11.1026") \
-        .config("spark.hadoop.fs.s3a.endpoint", "http://localhost:9000") \
+        .config("spark.hadoop.fs.s3a.endpoint", "http://minio:9000") \
         .config("spark.hadoop.fs.s3a.access.key", "ren294") \
         .config("spark.hadoop.fs.s3a.secret.key", "trungnghia294") \
         .config("spark.hadoop.fs.s3a.path.style.access", "true") \
@@ -99,7 +99,7 @@ def process_weather_stream():
     # Read from Kafka
     df = spark.readStream \
         .format("kafka") \
-        .option("kafka.bootstrap.servers", "localhost:9092") \
+        .option("kafka.bootstrap.servers", "broker:29092") \
         .option("subscribe", "weatherHCMC_out") \
         .option("startingOffsets", "earliest") \
         .load()
@@ -134,7 +134,7 @@ def process_weather_stream():
     # Write stream
     query = parsed_df.writeStream \
         .foreachBatch(write_batch) \
-        .option("checkpointLocation", "file:///Users/ren/Downloads/Data/spark-warehouse") \
+        .option("checkpointLocation", "file:///opt/spark-data/checkpoint-weather") \
         .trigger(processingTime="1 minute") \
         .start()
 

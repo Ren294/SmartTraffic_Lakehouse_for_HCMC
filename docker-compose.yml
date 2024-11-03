@@ -246,6 +246,7 @@ services:
       - nifi
       - ex1
       - one
+      - fs
 
   minio:
     container_name: storage
@@ -268,6 +269,48 @@ services:
       - etl
       - one
       - ex1
+      - fs
+
+  lakefs:
+    image: treeverse/lakefs:1.40
+    container_name: lakefs
+    hostname: lakefs
+    depends_on:
+      - minio
+      - lakefs-db
+    ports:
+      - 1111:8000
+    restart: always
+    networks:
+      - ren294_network
+    environment:
+      LAKEFS_DATABASE_TYPE: postgres
+      LAKEFS_DATABASE_POSTGRES_CONNECTION_STRING: postgres://postgres:postgres@lakefs-db:5432/postgres
+      LAKEFS_BLOCKSTORE_TYPE: s3
+      LAKEFS_BLOCKSTORE_S3_FORCE_PATH_STYLE: true
+      LAKEFS_BLOCKSTORE_S3_ENDPOINT: http://minio:9000
+      LAKEFS_BLOCKSTORE_S3_DISCOVER_BUCKET_REGION: false
+      LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ren294
+      LAKEFS_BLOCKSTORE_S3_CREDENTIALS_SECRET_ACCESS_KEY: trungnghia294
+      LAKEFS_AUTH_ENCRYPT_SECRET_KEY: ren294
+      LAKEFS_INSTALLATION_ACCESS_KEY_ID: ren294
+      LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: trungnghia294
+    profiles:
+      - fs
+
+  lakefs-db:
+    image: postgres:13
+    container_name: lakefs-db
+    hostname: lakefs-db
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - ./lakeFs/data:/var/lib/postgresql/data
+    networks:
+      - ren294_network
+    profiles:
+      - fs
 
   jobmanager:
     image: flink:java8
@@ -404,6 +447,53 @@ services:
     profiles:
       - ex1
       - one
+
+  spark-master:
+    image: nghia294/spark-arm64:v11.0
+    container_name: spark-master
+    hostname: spark-master
+    ports:
+      - "8080:8080"
+      - "7077:7077"
+      - "10003:10000"
+      - "10004:10001"
+    environment:
+      - SPARK_MODE=master
+      - SPARK_MASTER_HOST=spark-master
+      - SPARK_HOME=/opt/spark
+      - HIVE_CONF_DIR=/opt/hive/conf
+      - HIVE_METASTORE_URI="thrift://metastore:9083"
+    volumes:
+      # - spark_master_logs:/opt/spark/logs
+      - ./spark/apps:/opt/spark-apps
+      - ./spark/data:/opt/spark-data
+      - ./hiveconf:/opt/hive/conf
+      - ./sparkconfig:/opt/spark/conf
+    networks:
+      - ren294_network
+    profiles:
+      - hdp_spark
+      - ex1
+
+  spark-worker:
+    image: nghia294/spark-arm64:v11.0
+    container_name: spark-worker
+    depends_on:
+      - spark-master
+    ports:
+      - "8081:8081"
+    environment:
+      - SPARK_MASTER=spark://spark-master:7077
+      - SPARK_WORKLOAD=worker
+      - HIVE_CONF_DIR=/opt/hive/conf
+      - HIVE_METASTORE_URI="thrift://metastore:9083"
+    volumes:
+      - ./hiveconf:/opt/hive/conf
+    networks:
+      - ren294_network
+    profiles:
+      - hdp_spark
+      - ex1
 
 networks:
   ren294_network:

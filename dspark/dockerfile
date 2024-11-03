@@ -1,0 +1,79 @@
+FROM arm64v8/ubuntu:22.04
+
+LABEL maintainer="TrungNghia <trungnghia294@gmail.com>"
+
+ENV TZ=Asia/Ho_Chi_Minh
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+RUN apt-get update && apt-get install -y \
+    curl \
+    vim \
+    wget \
+    software-properties-common \
+    ssh \
+    net-tools \
+    ca-certificates \
+    python3 \
+    python3-pip \
+    python3-numpy \
+    python3-matplotlib \
+    python3-scipy \
+    python3-pandas \
+    openjdk-8-jdk \
+    python3-simpy \
+    rsync \
+    apt-utils
+
+RUN ssh-keygen -t rsa -f ~/.ssh/id_rsa -P '' && \
+    cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
+
+RUN echo 'root:ren294' | chpasswd && \
+    sed -i 's/#PermitRootLogin prohibit-password/PermitRootLogin yes/' /etc/ssh/sshd_config && \
+    sed -i 's/#PasswordAuthentication yes/PasswordAuthentication yes/' /etc/ssh/sshd_config && \
+    service ssh restart
+
+RUN mkdir -p /root/.ssh
+RUN echo "StrictHostKeyChecking no" >> /root/.ssh/config
+
+ENV JAVA_HOME /usr/lib/jvm/java-8-openjdk-arm64
+ENV SPARK_VERSION=3.2.0 \
+    HADOOP_VERSION=3.2 \
+    SPARK_HOME=/opt/spark \
+    PYTHONHASHSEED=1
+
+RUN update-alternatives --install "/usr/bin/python" "python" "$(which python3)" 1
+
+COPY spark-3.2.0-bin-hadoop3.2 /opt/spark
+
+RUN pip install hdfs
+
+RUN pip install delta-spark==2.0.0
+
+RUN $SPARK_HOME/bin/spark-shell --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,io.delta:delta-spark_2.12:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026 -i /dev/null
+
+COPY delta-core_2.12-2.0.0.jar /opt/spark/jars/
+COPY delta-storage-2.0.0.jar /opt/spark/jars/
+
+WORKDIR /opt/spark
+ENV SPARK_MASTER_PORT=7077 \
+    SPARK_MASTER_WEBUI_PORT=8080 \
+    SPARK_LOG_DIR=/opt/spark/logs \
+    SPARK_MASTER_LOG=/opt/spark/logs/spark-master.out \
+    SPARK_WORKER_LOG=/opt/spark/logs/spark-worker.out \
+    SPARK_WORKER_WEBUI_PORT=8080 \
+    SPARK_WORKER_PORT=7000 \
+    SPARK_MASTER="spark://spark-master:7077" \
+    SPARK_WORKLOAD="master" \
+    SPARK_HOME=/opt/spark
+
+ENV PATH=$PATH:$SPARK_HOME/bin:$SPARK_HOME/sbin
+
+RUN mkdir -p $SPARK_LOG_DIR && \
+    touch $SPARK_MASTER_LOG && \
+    touch $SPARK_WORKER_LOG && \
+    ln -sf /dev/stdout $SPARK_MASTER_LOG && \
+    ln -sf /dev/stdout $SPARK_WORKER_LOG
+
+COPY start-spark.sh /
+
+CMD ["/bin/bash", "/start-spark.sh"]
