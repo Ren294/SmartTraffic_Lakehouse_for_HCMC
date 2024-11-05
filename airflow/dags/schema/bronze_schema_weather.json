@@ -1,0 +1,212 @@
+{
+  "type": "object",
+  "properties": {
+    "datetime": {
+      "type": "string"
+    },
+    "datetimeEpoch": {
+      "type": "integer"
+    },
+    "temp": {
+      "type": "number"
+    },
+    "feelslike": {
+      "type": "number"
+    },
+    "humidity": {
+      "type": "number"
+    },
+    "dew": {
+      "type": "number"
+    },
+    "precip": {
+      "type": "number"
+    },
+    "precipprob": {
+      "type": "number"
+    },
+    "snow": {
+      "type": "number"
+    },
+    "snowdepth": {
+      "type": "number"
+    },
+    "preciptype": {
+      "type": ["array", "string", "null"],
+      "items": {
+        "type": "string"
+      }
+    },
+    "windgust": {
+      "type": "number"
+    },
+    "windspeed": {
+      "type": "number"
+    },
+    "winddir": {
+      "type": "number"
+    },
+    "pressure": {
+      "type": "number"
+    },
+    "visibility": {
+      "type": "number"
+    },
+    "cloudcover": {
+      "type": "number"
+    },
+    "solarradiation": {
+      "type": "number"
+    },
+    "solarenergy": {
+      "type": "number"
+    },
+    "uvindex": {
+      "type": "number"
+    },
+    "severerisk": {
+      "type": "number"
+    },
+    "conditions": {
+      "type": "string"
+    },
+    "icon": {
+      "type": "string"
+    },
+    "stations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "source": {
+      "type": "string"
+    },
+    "day": {
+      "type": "object",
+      "properties": {
+        "humidity": {
+          "type": "number"
+        },
+        "sunrise": {
+          "type": "string"
+        },
+        "tempmin": {
+          "type": "number"
+        },
+        "windspeed": {
+          "type": "number"
+        },
+        "preciptype": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "solarradiation": {
+          "type": "number"
+        },
+        "pressure": {
+          "type": "number"
+        },
+        "visibility": {
+          "type": "number"
+        },
+        "solarenergy": {
+          "type": "number"
+        },
+        "severerisk": {
+          "type": "number"
+        },
+        "dew": {
+          "type": "number"
+        },
+        "tempmax": {
+          "type": "number"
+        },
+        "precip": {
+          "type": "number"
+        },
+        "snowdepth": {
+          "type": "number"
+        },
+        "description": {
+          "type": "string"
+        },
+        "winddir": {
+          "type": "number"
+        },
+        "feelslike": {
+          "type": "number"
+        },
+        "precipprob": {
+          "type": "number"
+        },
+        "windgust": {
+          "type": "number"
+        },
+        "uvindex": {
+          "type": "number"
+        },
+        "moonphase": {
+          "type": "number"
+        },
+        "temp": {
+          "type": "number"
+        },
+        "feelslikemin": {
+          "type": "number"
+        },
+        "sunriseEpoch": {
+          "type": "integer"
+        },
+        "feelslikemax": {
+          "type": "number"
+        },
+        "sunsetEpoch": {
+          "type": "integer"
+        },
+        "cloudcover": {
+          "type": "number"
+        },
+        "snow": {
+          "type": "number"
+        },
+        "precipcover": {
+          "type": "number"
+        },
+        "conditions": {
+          "type": "string"
+        },
+        "sunset": {
+          "type": "string"
+        }
+      },
+      "required": ["humidity", "tempmin", "tempmax", "description"]
+    },
+    "timezone": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string"
+    },
+    "latitude": {
+      "type": "number"
+    },
+    "longitude": {
+      "type": "number"
+    },
+    "resolvedAddress": {
+      "type": "string"
+    },
+    "date": {
+      "type": "string"
+    },
+    "address": {
+      "type": "string"
+    },
+    "tzoffset": {
+      "type": "number"
+    }
+  }
+}

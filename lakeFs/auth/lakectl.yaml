@@ -1,0 +1,22 @@
+credentials:
+  access_key_id: AKIAJ3ZOMDF3UF24HUGQ
+  secret_access_key: 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
+experimental:
+  local:
+    posix_permissions:
+      enabled: false
+local:
+  skip_non_regular_files: false
+metastore:
+  glue:
+    catalog_id: ""
+  hive:
+    db_location_uri: file:/user/hive/warehouse/
+    uri: ""
+server:
+  endpoint_url: http://localhost:8000/api/v1
+  retries:
+    enabled: true
+    max_attempts: 4
+    max_wait_interval: 30s
+    min_wait_interval: 200ms

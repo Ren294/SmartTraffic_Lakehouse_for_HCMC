@@ -1,6 +1,0 @@
-# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
-credentials:
-  access_key_id: AKIAJ3ZOMDF3UF24HUGQ
-  secret_access_key: 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
-server:
-  endpoint_url: http://localhost:1111/api/v1
