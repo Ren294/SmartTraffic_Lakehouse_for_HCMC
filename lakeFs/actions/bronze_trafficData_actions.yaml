@@ -17,4 +17,3 @@ hooks:
     timeout: "30m"
     dag_conf:
       repository: "bronze"
-      branch_name: "{{ EVENT.BRANCH }}"
