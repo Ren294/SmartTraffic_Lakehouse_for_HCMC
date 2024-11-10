@@ -1,12 +1,12 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 import json
 import jsonschema
 import os
 from connection import get_redis_client, get_lakefs_client
 import lakefs
-from airflow.operators.dummy import DummyOperator
 
 
 def load_schema():
@@ -14,67 +14,90 @@ def load_schema():
     SCHEMA_DIR = os.path.join(os.path.dirname(
         os.path.dirname(__file__)), 'dags/schema')
 
-    with open(os.path.join(SCHEMA_DIR, 'bronze_schema_weather.json'), 'r') as schema_file:
+    with open(os.path.join(SCHEMA_DIR, 'bronze_schema_traffic_accidents.json'), 'r') as schema_file:
         return json.load(schema_file)
 
 
-def validate_weather_data(**context):
+def validate_traffic_accident_data(**context):
     # Extract information from the lakeFS event in run config
     lakefs_event = context['dag_run'].conf['lakeFS_event']
-    branch_name = lakefs_event['branch_id']  # Changed from branch_name
+    branch_name = lakefs_event['branch_id']
     repository = context['dag_run'].conf['repository']
 
-    # Extract date from branch name (branch_weather_2024-03-20 -> 2024-03-20)
-    date_str = branch_name.replace("branch_weather_", "")
+    # Extract road name, district and month from branch name
+    # Example: branch_trafficAccident_DuongVoThiSau-Quan3-HCMC_2024-03
+    branch_parts = branch_name.replace(
+        "branch_trafficAccident_", "").split("_")
+    location_info = branch_parts[0]  # DuongVoThiSau-Quan3-HCMC
+    accident_month = branch_parts[1]  # 2024-03
 
     # Get the client and create repository object
     client = get_lakefs_client()
     repo = lakefs.repository(repository, client=client)
     branch = repo.branch(branch_name)
 
-    # Read weather data
-    weather_path = f"weather/{date_str}-HCMC"
-    weather_obj = branch.object(path=weather_path)
+    # Construct the path for accident data
+    data_path = f"traffic_accidents/{location_info}/{accident_month}"
+    accident_obj = branch.object(path=data_path)
 
-    if not weather_obj.exists():
-        raise Exception(f"Weather data not found at path: {weather_path}")
+    if not accident_obj.exists():
+        raise Exception(
+            f"Traffic accident data not found at path: {data_path}")
 
     # Read and parse data
     data = []
-    with weather_obj.reader(mode='r') as reader:
+    with accident_obj.reader(mode='r') as reader:
         for line in reader:
-            data.append(json.loads(line))
+            if line.strip():  # Skip empty lines
+                data.append(json.loads(line))
 
     # Load schema from file
     schema = load_schema()
 
-    # Check 1: Validate number of records
-    if len(data) != 24:
-        raise ValueError(f"Expected 24 hourly records, but found {len(data)}")
+    # Validation checks
+    road_name = location_info.split("-")[0]
+    district = location_info.split("-")[1]
 
-    # Check 2: Validate date consistency
     for record in data:
-        if record['date'] != date_str:
-            raise ValueError(f"Date mismatch: Expected \
-              {date_str}, found {record['date']}")
-
-    # Check 3: Validate schema for each record
-    for record in data:
+        # Check 1: Validate schema
         try:
             jsonschema.validate(instance=record, schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             raise ValueError(f"Schema validation failed: {str(e)}")
 
-    # Check 4: Validate hours sequence
-    hours = sorted([int(record['datetime'].split(':')[0]) for record in data])
-    expected_hours = list(range(24))
-    if hours != expected_hours:
-        raise ValueError("Missing or duplicate hours in data")
+        # Check 2: Validate road name consistency
+        if record['road_name'].replace(" ", "") != road_name:
+            raise ValueError(f"Road name mismatch: Expected \
+              {road_name}, found {record['road_name']}")
+
+        # Check 3: Validate district consistency
+        if record['district'].replace(" ", "") != district:
+            raise ValueError(f"District mismatch: Expected \
+              {district}, found {record['district']}")
+
+        # Check 4: Validate accident month consistency
+        if record['accident_month'] != accident_month:
+            raise ValueError(f"Month mismatch: Expected \
+              {accident_month}, found {record['accident_month']}")
+
+        # Check 5: Validate number of vehicles matches vehicles_involved array
+        if record['number_of_vehicles'] != len(record['vehicles_involved']):
+            raise ValueError(f"Number of vehicles ({record['number_of_vehicles']}) doesn't match \
+                vehicles_involved array length ({len(record['vehicles_involved'])})")
+
+        # Check 6: Validate estimated_recovery_time is after accident_time
+        accident_time = datetime.fromisoformat(record['accident_time'])
+        recovery_time = datetime.fromisoformat(
+            record['estimated_recovery_time'])
+        if recovery_time <= accident_time:
+            raise ValueError(
+                "Estimated recovery time must be after accident time")
 
     return {
         "validation": "success",
         "branch": branch_name,
-        "commit_id": lakefs_event['commit_id']
+        "commit_id": lakefs_event['commit_id'],
+        "records_validated": len(data)
     }
 
 
@@ -166,9 +189,9 @@ default_args = {
 }
 
 dag = DAG(
-    'bronze_weather_validation_dag',
+    'bronze_traffic_accident_validation_dag',
     default_args=default_args,
-    description='Validate weather data and merge to main',
+    description='Validate traffic accident data and merge to main',
     schedule_interval=None,
     catchup=False
 )
@@ -182,8 +205,8 @@ end_dag = DummyOperator(
     dag=dag,
 )
 validate_task = PythonOperator(
-    task_id='validate_weather_data',
-    python_callable=validate_weather_data,
+    task_id='validate_traffic_accident_data',
+    python_callable=validate_traffic_accident_data,
     provide_context=True,
     dag=dag
 )

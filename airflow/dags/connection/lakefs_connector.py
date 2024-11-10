@@ -2,8 +2,8 @@ from lakefs.client import Client
 
 LAKEFS_CONFIG = {
     'host': 'http://lakefs:8000',
-    'username': 'AKIAJ3ZOMDF3UF24HUGQ',
-    'password': 'vYoxDXsQQEfor9/hM41KP3GPWptAXlvL+3eu0MZa'
+    'username': 'AKIAJC5AQUW4OXQYCRAQ',
+    'password': 'iYf4H8GSjY+HMfN70AMquj0+PRpYcgUl0uN01G7Z'
 }
 
 _lakefs_client = None

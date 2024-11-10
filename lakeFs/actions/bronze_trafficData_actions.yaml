@@ -1,16 +1,16 @@
-name: Bronze Weather Data Validation
-description: Triggers Airflow DAG to validate bronze weather data and merge to main
+name: Bronze Traffic Data Validation
+description: Triggers Airflow DAG to validate bronze traffic data and merge to main
 on:
   post-commit:
     branches:
     - branch_trafficData_*
 hooks:
-- id: trigger_bronze_weather_validation
+- id: trigger_bronze_traffic_validation
   type: airflow
-  description: Trigger weather data validation DAG
+  description: Trigger traffic data validation DAG
   properties:
     url: "http://airflow-webserver:8080"
-    dag_id: "bronze_weather_validation_dag"
+    dag_id: "bronze_traffic_data_validation_dag"
     username: "ren294"
     password: "ren294"
     wait_for_dag: true

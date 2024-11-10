@@ -469,7 +469,7 @@ services:
       - one
 
   nifi:
-    image: nghia294/nifi:1.27.0
+    image: nghia294/nifi:1.27
     container_name: nifi
     hostname: nifi
     ports:
@@ -533,6 +533,7 @@ services:
       - ren294_network
     volumes:
       - ./lakeFs/actions:/home/actions
+      - ./lakeFs/script:/home/script
       - ./lakeFs/auth/lakectl.yaml:/home/lakefs/.lakectl.yaml
     environment:
       LAKEFS_DATABASE_TYPE: postgres

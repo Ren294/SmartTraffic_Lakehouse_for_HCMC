@@ -1,0 +1,220 @@
+{
+  "type": "object",
+  "properties": {
+    "vehicle_id": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string"
+        },
+        "date": {
+          "type": "string"
+        },
+        "month": {
+          "type": "string"
+        },
+        "license_number": {
+          "type": "string"
+        },
+        "contact_info": {
+          "type": "object",
+          "properties": {
+            "phone": {
+              "type": "string",
+              "pattern": "^\\+?[0-9]{10,15}$"
+            },
+            "email": {
+              "type": "string",
+              "format": "email"
+            }
+          },
+          "required": ["phone", "email"]
+        }
+      },
+      "required": ["name", "license_number", "contact_info"]
+    },
+    "speed_kmph": {
+      "type": "number"
+    },
+    "road": {
+      "type": "object",
+      "properties": {
+        "street": {
+          "type": "string"
+        },
+        "district": {
+          "type": "string"
+        },
+        "city": {
+          "type": "string"
+        }
+      },
+      "required": ["street", "district", "city"]
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "vehicle_size": {
+      "type": "object",
+      "properties": {
+        "length_meters": {
+          "type": "number"
+        },
+        "width_meters": {
+          "type": "number"
+        },
+        "height_meters": {
+          "type": "number"
+        }
+      }
+    },
+    "vehicle_type": {
+      "type": "string"
+    },
+    "vehicle_classification": {
+      "type": "string"
+    },
+    "coordinates": {
+      "type": "object",
+      "properties": {
+        "latitude": {
+          "type": "number",
+          "minimum": -90,
+          "maximum": 90
+        },
+        "longitude": {
+          "type": "number",
+          "minimum": -180,
+          "maximum": 180
+        }
+      },
+      "required": ["latitude", "longitude"]
+    },
+    "engine_status": {
+      "type": "object",
+      "properties": {
+        "is_running": {
+          "type": "boolean"
+        },
+        "rpm": {
+          "type": "number"
+        },
+        "oil_pressure": {
+          "type": "string"
+        }
+      },
+      "required": ["is_running", "rpm", "oil_pressure"]
+    },
+    "fuel_level_percentage": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "passenger_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "internal_temperature_celsius": {
+      "type": "number"
+    },
+    "weather_condition": {
+      "type": "object",
+      "properties": {
+        "temperature_celsius": {
+          "type": "number"
+        },
+        "humidity_percentage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100
+        },
+        "condition": {
+          "type": "string"
+        }
+      },
+      "required": ["temperature_celsius", "humidity_percentage", "condition"]
+    },
+    "estimated_time_of_arrival": {
+      "type": "object",
+      "properties": {
+        "destination": {
+          "type": "object",
+          "properties": {
+            "street": {
+              "type": "string"
+            },
+            "district": {
+              "type": "string"
+            },
+            "city": {
+              "type": "string"
+            }
+          },
+          "required": ["street", "district", "city"]
+        },
+        "eta": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "required": ["destination", "eta"]
+    },
+    "traffic_status": {
+      "type": "object",
+      "properties": {
+        "congestion_level": {
+          "type": "string"
+        },
+        "estimated_delay_minutes": {
+          "type": "integer"
+        }
+      },
+      "required": ["congestion_level", "estimated_delay_minutes"]
+    },
+    "alerts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "severity": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": ["type", "description", "severity", "timestamp"]
+      }
+    }
+  },
+  "required": [
+    "vehicle_id",
+    "owner",
+    "speed_kmph",
+    "road",
+    "timestamp",
+    "vehicle_size",
+    "vehicle_type",
+    "vehicle_classification",
+    "coordinates",
+    "engine_status",
+    "fuel_level_percentage",
+    "passenger_count",
+    "internal_temperature_celsius",
+    "weather_condition",
+    "estimated_time_of_arrival",
+    "traffic_status",
+    "alerts"
+  ]
+}

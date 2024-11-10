@@ -1,6 +1,6 @@
 credentials:
-  access_key_id: AKIAJ3ZOMDF3UF24HUGQ
-  secret_access_key: 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
+  access_key_id: AKIAJC5AQUW4OXQYCRAQ
+  secret_access_key: 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
 experimental:
   local:
     posix_permissions:

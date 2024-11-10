@@ -1,0 +1,68 @@
+{
+  "type": "object",
+  "properties": {
+    "road_name": {
+      "type": "string"
+    },
+    "district": {
+      "type": "string"
+    },
+    "accident_month": {
+      "type": "string"
+    },
+    "city": {
+      "type": "string"
+    },
+    "vehicles_involved": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "vehicle_type": {
+            "type": "string"
+          },
+          "vehicle_id": {
+            "type": "string"
+          }
+        },
+        "required": ["vehicle_type", "vehicle_id"]
+      },
+      "minItems": 1
+    },
+    "accident_severity": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 5
+    },
+    "accident_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "number_of_vehicles": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "estimated_recovery_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "congestion_km": {
+      "type": "number"
+    },
+    "description": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "road_name",
+    "district",
+    "city",
+    "vehicles_involved",
+    "accident_severity",
+    "accident_time",
+    "number_of_vehicles",
+    "estimated_recovery_time",
+    "congestion_km",
+    "description"
+  ]
+}

@@ -1,12 +1,12 @@
 from airflow import DAG
 from airflow.operators.python import PythonOperator
+from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 import json
 import jsonschema
 import os
 from connection import get_redis_client, get_lakefs_client
 import lakefs
-from airflow.operators.dummy import DummyOperator
 
 
 def load_schema():
@@ -14,67 +14,110 @@ def load_schema():
     SCHEMA_DIR = os.path.join(os.path.dirname(
         os.path.dirname(__file__)), 'dags/schema')
 
-    with open(os.path.join(SCHEMA_DIR, 'bronze_schema_weather.json'), 'r') as schema_file:
+    with open(os.path.join(SCHEMA_DIR, 'bronze_schema_traffic_data.json'), 'r') as schema_file:
         return json.load(schema_file)
 
 
-def validate_weather_data(**context):
+def validate_traffic_data(**context):
     # Extract information from the lakeFS event in run config
     lakefs_event = context['dag_run'].conf['lakeFS_event']
-    branch_name = lakefs_event['branch_id']  # Changed from branch_name
+    branch_name = lakefs_event['branch_id']
     repository = context['dag_run'].conf['repository']
 
-    # Extract date from branch name (branch_weather_2024-03-20 -> 2024-03-20)
-    date_str = branch_name.replace("branch_weather_", "")
+    # Extract vehicle_id, month and date from branch name
+    # Example: branch_trafficData_VH64581_2024-04_2024-04-07
+    branch_parts = branch_name.replace("branch_trafficData_", "").split("_")
+    vehicle_id = branch_parts[0]  # VH64581
+    month = branch_parts[1]       # 2024-04
+    date = branch_parts[2]        # 2024-04-07
 
     # Get the client and create repository object
     client = get_lakefs_client()
     repo = lakefs.repository(repository, client=client)
     branch = repo.branch(branch_name)
 
-    # Read weather data
-    weather_path = f"weather/{date_str}-HCMC"
-    weather_obj = branch.object(path=weather_path)
+    # Read first record to get vehicle type and classification
+    dummy_path = f"traffic_data/temp"
+    dummy_obj = branch.object(path=dummy_path)
 
-    if not weather_obj.exists():
-        raise Exception(f"Weather data not found at path: {weather_path}")
+    if not dummy_obj.exists():
+        raise Exception(
+            "No data found to determine vehicle type and classification")
+
+    with dummy_obj.reader(mode='r') as reader:
+        first_record = json.loads(next(reader))
+        vehicle_type = first_record['vehicle_type']
+        vehicle_classification = first_record['vehicle_classification']
+
+    # Construct the actual data path
+    data_path = f"traffic_data/{vehicle_type}/\
+      {vehicle_classification}/{vehicle_id}/{month}/{date}"
+    traffic_obj = branch.object(path=data_path)
+
+    if not traffic_obj.exists():
+        raise Exception(f"Traffic data not found at path: {data_path}")
 
     # Read and parse data
     data = []
-    with weather_obj.reader(mode='r') as reader:
+    with traffic_obj.reader(mode='r') as reader:
         for line in reader:
-            data.append(json.loads(line))
+            if line.strip():  # Skip empty lines
+                data.append(json.loads(line))
 
     # Load schema from file
     schema = load_schema()
 
-    # Check 1: Validate number of records
-    if len(data) != 24:
-        raise ValueError(f"Expected 24 hourly records, but found {len(data)}")
-
-    # Check 2: Validate date consistency
+    # Validation checks
     for record in data:
-        if record['date'] != date_str:
-            raise ValueError(f"Date mismatch: Expected \
-              {date_str}, found {record['date']}")
-
-    # Check 3: Validate schema for each record
-    for record in data:
+        # Check 1: Validate schema
         try:
             jsonschema.validate(instance=record, schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             raise ValueError(f"Schema validation failed: {str(e)}")
 
-    # Check 4: Validate hours sequence
-    hours = sorted([int(record['datetime'].split(':')[0]) for record in data])
-    expected_hours = list(range(24))
-    if hours != expected_hours:
-        raise ValueError("Missing or duplicate hours in data")
+        # Check 2: Validate vehicle_id consistency
+        if record['vehicle_id'] != vehicle_id:
+            raise ValueError(f"Vehicle ID mismatch: Expected \
+              {vehicle_id}, found {record['vehicle_id']}")
+
+        # Check 3: Validate month consistency
+        if record['month'] != month:
+            raise ValueError(f"Month mismatch: Expected \
+              {month}, found {record['month']}")
+
+        # Check 4: Validate date consistency
+        if record['date'] != date:
+            raise ValueError(f"Date mismatch: Expected \
+              {date}, found {record['date']}")
+
+        # Check 5: Validate vehicle type and classification consistency
+        if record['vehicle_type'] != vehicle_type:
+            raise ValueError(f"Vehicle type mismatch: Expected \
+              {vehicle_type}, found {record['vehicle_type']}")
+
+        if record['vehicle_classification'] != vehicle_classification:
+            raise ValueError(f"Vehicle classification mismatch: Expected \
+              {vehicle_classification}, found {record['vehicle_classification']}")
+
+        # Check 6: Validate timestamp format and date consistency
+        record_date = datetime.fromisoformat(
+            record['timestamp']).strftime('%Y-%m-%d')
+        if record_date != date:
+            raise ValueError(f"Timestamp date mismatch: Expected \
+              {date}, found {record_date}")
+
+        # Check 7: Validate ETA is after timestamp
+        timestamp = datetime.fromisoformat(record['timestamp'])
+        eta = datetime.fromisoformat(
+            record['estimated_time_of_arrival']['eta'])
+        if eta <= timestamp:
+            raise ValueError("ETA must be after timestamp")
 
     return {
         "validation": "success",
         "branch": branch_name,
-        "commit_id": lakefs_event['commit_id']
+        "commit_id": lakefs_event['commit_id'],
+        "records_validated": len(data)
     }
 
 
@@ -166,9 +209,9 @@ default_args = {
 }
 
 dag = DAG(
-    'bronze_weather_validation_dag',
+    'bronze_traffic_data_validation_dag',
     default_args=default_args,
-    description='Validate weather data and merge to main',
+    description='Validate traffic data and merge to main',
     schedule_interval=None,
     catchup=False
 )
@@ -182,8 +225,8 @@ end_dag = DummyOperator(
     dag=dag,
 )
 validate_task = PythonOperator(
-    task_id='validate_weather_data',
-    python_callable=validate_weather_data,
+    task_id='validate_traffic_data',
+    python_callable=validate_traffic_data,
     provide_context=True,
     dag=dag
 )
