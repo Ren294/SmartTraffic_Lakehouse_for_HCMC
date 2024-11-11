@@ -24,34 +24,23 @@ def validate_traffic_data(**context):
     branch_name = lakefs_event['branch_id']
     repository = context['dag_run'].conf['repository']
 
-    # Extract vehicle_id, month and date from branch name
-    # Example: branch_trafficData_VH64581_2024-04_2024-04-07
+    # Parse branch name components
+    # Example: branch_trafficData_Motorbike_Civilian_VH38572_2024-04_2024-04-07
     branch_parts = branch_name.replace("branch_trafficData_", "").split("_")
-    vehicle_id = branch_parts[0]  # VH64581
-    month = branch_parts[1]       # 2024-04
-    date = branch_parts[2]        # 2024-04-07
+    vehicle_type = branch_parts[0]        # Motorbike
+    classification = branch_parts[1]       # Civilian
+    vehicle_id = branch_parts[2]          # VH38572
+    month = branch_parts[3]               # 2024-04
+    date = branch_parts[4]                # 2024-04-07
 
     # Get the client and create repository object
     client = get_lakefs_client()
     repo = lakefs.repository(repository, client=client)
     branch = repo.branch(branch_name)
 
-    # Read first record to get vehicle type and classification
-    dummy_path = f"traffic_data/temp"
-    dummy_obj = branch.object(path=dummy_path)
-
-    if not dummy_obj.exists():
-        raise Exception(
-            "No data found to determine vehicle type and classification")
-
-    with dummy_obj.reader(mode='r') as reader:
-        first_record = json.loads(next(reader))
-        vehicle_type = first_record['vehicle_type']
-        vehicle_classification = first_record['vehicle_classification']
-
-    # Construct the actual data path
-    data_path = f"traffic_data/{vehicle_type}/\
-      {vehicle_classification}/{vehicle_id}/{month}/{date}"
+    # Construct the path for traffic data
+    data_path = f"traffic_data/{vehicle_type}/{
+        classification}/{vehicle_id}/{month}/{date}"
     traffic_obj = branch.object(path=data_path)
 
     if not traffic_obj.exists():
@@ -67,7 +56,6 @@ def validate_traffic_data(**context):
     # Load schema from file
     schema = load_schema()
 
-    # Validation checks
     for record in data:
         # Check 1: Validate schema
         try:
@@ -75,43 +63,50 @@ def validate_traffic_data(**context):
         except jsonschema.exceptions.ValidationError as e:
             raise ValueError(f"Schema validation failed: {str(e)}")
 
-        # Check 2: Validate vehicle_id consistency
-        if record['vehicle_id'] != vehicle_id:
-            raise ValueError(f"Vehicle ID mismatch: Expected \
-              {vehicle_id}, found {record['vehicle_id']}")
-
-        # Check 3: Validate month consistency
-        if record['month'] != month:
-            raise ValueError(f"Month mismatch: Expected \
-              {month}, found {record['month']}")
-
-        # Check 4: Validate date consistency
-        if record['date'] != date:
-            raise ValueError(f"Date mismatch: Expected \
-              {date}, found {record['date']}")
-
-        # Check 5: Validate vehicle type and classification consistency
+        # Check 2: Validate vehicle type consistency
         if record['vehicle_type'] != vehicle_type:
             raise ValueError(f"Vehicle type mismatch: Expected \
               {vehicle_type}, found {record['vehicle_type']}")
 
-        if record['vehicle_classification'] != vehicle_classification:
-            raise ValueError(f"Vehicle classification mismatch: Expected \
-              {vehicle_classification}, found {record['vehicle_classification']}")
+        # Check 3: Validate vehicle classification consistency
+        if record['vehicle_classification'] != classification:
+            raise ValueError(f"Classification mismatch: Expected \
+              {classification}, found {record['vehicle_classification']}")
 
-        # Check 6: Validate timestamp format and date consistency
-        record_date = datetime.fromisoformat(
-            record['timestamp']).strftime('%Y-%m-%d')
-        if record_date != date:
-            raise ValueError(f"Timestamp date mismatch: Expected \
-              {date}, found {record_date}")
+        # Check 4: Validate vehicle ID consistency
+        if record['vehicle_id'] != vehicle_id:
+            raise ValueError(f"Vehicle ID mismatch: Expected \
+              {vehicle_id}, found {record['vehicle_id']}")
 
-        # Check 7: Validate ETA is after timestamp
-        timestamp = datetime.fromisoformat(record['timestamp'])
-        eta = datetime.fromisoformat(
-            record['estimated_time_of_arrival']['eta'])
-        if eta <= timestamp:
-            raise ValueError("ETA must be after timestamp")
+        # Check 5: Validate month consistency
+        if record['month'] != month:
+            raise ValueError(f"Month mismatch: Expected \
+              {month}, found {record['month']}")
+
+        # Check 6: Validate date consistency
+        if record['date'] != date:
+            raise ValueError(f"Date mismatch: Expected \
+              {date}, found {record['date']}")
+
+        # Check 7: Validate timestamp format and consistency with date
+        try:
+            timestamp = datetime.strptime(
+                record['timestamp'], "%Y-%m-%d %H:%M:%S")
+            record_date = timestamp.strftime("%Y-%m-%d")
+            if record_date != date:
+                raise ValueError(f"Timestamp date \
+                  {record_date} doesn't match expected date {date}")
+        except ValueError as e:
+            raise ValueError(f"Invalid timestamp format: {str(e)}")
+
+        # Check 8: Validate ETA is after timestamp
+        try:
+            eta = datetime.strptime(
+                record['estimated_time_of_arrival']['eta'], "%Y-%m-%d %H:%M:%S")
+            if eta <= timestamp:
+                raise ValueError("ETA must be after timestamp")
+        except ValueError as e:
+            raise ValueError(f"Invalid ETA format: {str(e)}")
 
     return {
         "validation": "success",
@@ -215,8 +210,9 @@ dag = DAG(
     schedule_interval=None,
     catchup=False
 )
+
 start_dag = DummyOperator(
-    task_id='sstart_dag',
+    task_id='start_dag',
     dag=dag,
 )
 
@@ -224,6 +220,7 @@ end_dag = DummyOperator(
     task_id='end_dag',
     dag=dag,
 )
+
 validate_task = PythonOperator(
     task_id='validate_traffic_data',
     python_callable=validate_traffic_data,
