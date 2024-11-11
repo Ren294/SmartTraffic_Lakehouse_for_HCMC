@@ -10,7 +10,7 @@ hooks:
   description: Trigger trafficAccident validation DAG
   properties:
     url: "http://airflow-webserver:8080"
-    dag_id: "bronze_traffic_accident_validation_dag"
+    dag_id: "Bronze_Traffic_accident_Validation_DAG"
     username: "ren294"
     password: "ren294"
     wait_for_dag: true

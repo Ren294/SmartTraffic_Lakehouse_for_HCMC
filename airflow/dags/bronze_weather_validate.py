@@ -166,7 +166,7 @@ default_args = {
 }
 
 dag = DAG(
-    'bronze_weather_validation_dag',
+    'Bronze_Weather_Validation_DAG',
     default_args=default_args,
     description='Validate weather data and merge to main',
     schedule_interval=None,

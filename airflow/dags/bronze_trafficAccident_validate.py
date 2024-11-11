@@ -189,7 +189,7 @@ default_args = {
 }
 
 dag = DAG(
-    'bronze_traffic_accident_validation_dag',
+    'Bronze_Traffic_accident_Validation_DAG',
     default_args=default_args,
     description='Validate traffic accident data and merge to main',
     schedule_interval=None,
