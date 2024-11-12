@@ -49,7 +49,7 @@ RUN pip install hdfs
 
 RUN pip install delta-spark==2.0.0
 
-RUN $SPARK_HOME/bin/spark-shell --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,io.delta:delta-spark_2.12:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026 -i /dev/null
+RUN $SPARK_HOME/bin/spark-shell --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,io.delta:delta-spark_2.12:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4 -i /dev/null
 
 COPY delta-core_2.12-2.0.0.jar /opt/spark/jars/
 COPY delta-storage-2.0.0.jar /opt/spark/jars/
