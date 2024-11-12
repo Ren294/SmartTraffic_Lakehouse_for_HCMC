@@ -1,0 +1,100 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ArtifactsWorkspaceSettings">
+    <artifacts-to-build>
+      <artifact name="VehicleDataProcess:jar" />
+    </artifacts-to-build>
+  </component>
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="aa5b423d-7e49-4408-b1d4-96e61e569513" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/artifacts/TrafficCounterProcess_jar.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/src/main/java/org/example/DataStreamJob.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/src/main/resources/log4j2.properties" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/encodings.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/org/example/DataStreamJob.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/log4j2.properties" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TrafficProcess/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../TrafficProcess/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../untitled/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../untitled/pom.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../untitled/src/main/java/org/example/DataStreamJob.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../untitled/src/main/resources/log4j2.properties" beforeDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/../../.." />
+  </component>
+  <component name="ProjectColorInfo">{
+  &quot;associatedIndex&quot;: 4
+}</component>
+  <component name="ProjectId" id="2ojyZRnSNKXH3HrNN9Uld9BygwI" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Maven. [org.apache.maven.plugins:maven-archetype-plugin:RELEASE:generate].executor": "Run",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "SHARE_PROJECT_CONFIGURATION_FILES": "true",
+    "git-widget-placeholder": "main",
+    "kotlin-language-version-configured": "true",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "project.structure.last.edited": "Artifacts",
+    "project.structure.proportion": "0.15",
+    "project.structure.side.proportion": "0.2",
+    "vue.rearranger.settings.migration": "true"
+  }
+}]]></component>
+  <component name="SharedIndexes">
+    <attachedChunks>
+      <set>
+        <option value="bundled-jdk-9823dce3aa75-b114ca120d71-intellij.indexing.shared.core-IU-242.21829.227" />
+        <option value="bundled-js-predefined-d6986cc7102b-7c0b70fcd90d-JavaScript-IU-242.21829.227" />
+      </set>
+    </attachedChunks>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="aa5b423d-7e49-4408-b1d4-96e61e569513" name="Changes" comment="" />
+      <created>1731397335956</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1731397335956</updated>
+      <workItem from="1731397336933" duration="130000" />
+      <workItem from="1731397773514" duration="808000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+</project>
