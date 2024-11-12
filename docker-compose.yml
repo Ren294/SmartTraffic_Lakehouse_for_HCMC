@@ -650,67 +650,6 @@ services:
       - fs1
       - fs2
 
-  pinot-zookeeper:
-    image: zookeeper:3.9.2
-    container_name: pinot-zookeeper
-    ports:
-      - "2181:2181"
-    environment:
-      ZOOKEEPER_CLIENT_PORT: 2181
-      ZOOKEEPER_TICK_TIME: 2000
-    networks:
-      - ren294_network
-    profiles:
-      - pinot
-
-  pinot-controller:
-    image: apachepinot/pinot:1.2.0
-    command: "StartController -zkAddress pinot-zookeeper:2181"
-    container_name: pinot-controller
-    restart: unless-stopped
-    ports:
-      - "9000:9000"
-    environment:
-      JAVA_OPTS: "-Dplugins.dir=/opt/pinot/plugins -Xms1G -Xmx4G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xloggc:gc-pinot-controller.log"
-    depends_on:
-      - pinot-zookeeper
-    networks:
-      - ren294_network
-    profiles:
-      - pinot
-
-  pinot-broker:
-    image: apachepinot/pinot:1.2.0
-    command: "StartBroker -zkAddress pinot-zookeeper:2181"
-    restart: unless-stopped
-    container_name: "pinot-broker"
-    ports:
-      - "8099:8099"
-    environment:
-      JAVA_OPTS: "-Dplugins.dir=/opt/pinot/plugins -Xms4G -Xmx4G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xloggc:gc-pinot-broker.log"
-    depends_on:
-      - pinot-controller
-    networks:
-      - ren294_network
-    profiles:
-      - pinot
-
-  pinot-server:
-    image: apachepinot/pinot:1.2.0
-    command: "StartServer -zkAddress pinot-zookeeper:2181"
-    restart: unless-stopped
-    container_name: "pinot-server"
-    ports:
-      - "8098:8098"
-    environment:
-      JAVA_OPTS: "-Dplugins.dir=/opt/pinot/plugins -Xms4G -Xmx16G -XX:+UseG1GC -XX:MaxGCPauseMillis=200 -Xloggc:gc-pinot-server.log"
-    depends_on:
-      - pinot-broker
-    networks:
-      - ren294_network
-    profiles:
-      - pinot
-
   redis:
     container_name: redis_traffic
     image: redis/redis-stack:7.4.0-v0-arm64
@@ -778,6 +717,28 @@ services:
       - hdp_spark
       - ex1
       - fs2
+
+  clickhouse-server:
+    image: clickhouse/clickhouse-server:24
+    container_name: clickhouse-server
+    hostname: clickhouse-server
+    ports:
+      - "18123:8123"
+      - "19000:9000"
+    ulimits:
+      nofile:
+        soft: 262144
+        hard: 262144
+    volumes:
+      - ./clickhouse/data:/var/lib/clickhouse
+      - ./clickhouse/logs:/var/log/clickhouse-server
+    # environment:
+    #   - CLICKHOUSE_USER=ren294
+    #   - CLICKHOUSE_PASSWORD=trungnghia294
+    networks:
+      - ren294_network
+    profiles:
+      - ch
 
 networks:
   ren294_network:
