@@ -41,6 +41,7 @@ services:
     profiles:
       - airflow
       - fs
+      - fs2
     networks:
       - ren294_network
 
@@ -60,6 +61,7 @@ services:
       - airflow
       - all
       - fs
+      - fs2
     networks:
       - ren294_network
 
@@ -85,6 +87,7 @@ services:
       - airflow
       - all
       - fs
+      - fs2
     networks:
       - ren294_network
 
@@ -106,6 +109,7 @@ services:
       - airflow
       - all
       - fs
+      - fs2
     networks:
       - ren294_network
 
@@ -132,6 +136,7 @@ services:
       - airflow
       - all
       - fs
+      - fs2
     networks:
       - ren294_network
 
@@ -157,6 +162,7 @@ services:
       - airflow
       - all
       - fs
+      - fs2
     networks:
       - ren294_network
 
@@ -225,6 +231,7 @@ services:
       - airflow
       - all
       - fs
+      - fs2
     networks:
       - ren294_network
 
@@ -250,6 +257,7 @@ services:
       - flower
       - all
       - fs
+      - fs2
     ports:
       - "5555:5555"
     healthcheck:
@@ -318,6 +326,7 @@ services:
       - one
       - ex1
       - fs1
+      - fs2
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.10
@@ -339,6 +348,7 @@ services:
       - one
       - ex1
       - fs1
+      - fs2
 
   broker:
     image: confluentinc/cp-kafka:7.3.10
@@ -377,6 +387,7 @@ services:
       - one
       - ex1
       - fs1
+      - fs2
 
   rest-proxy:
     image: confluentinc/cp-kafka-rest:7.3.10
@@ -397,6 +408,7 @@ services:
       - one
       - ex1
       - fs1
+      - fs2
 
   redpanda:
     image: redpandadata/console:v2.7.1
@@ -414,6 +426,7 @@ services:
       - ex1
       - one
       - fs1
+      - fs2
 
   debezium:
     image: debezium/connect:3.0
@@ -501,6 +514,7 @@ services:
       - one
       - fs
       - fs1
+      - fs2
 
   minio:
     container_name: storage
@@ -524,6 +538,7 @@ services:
       - one
       - ex1
       - fs
+      - fs2
 
   lakefs:
     image: treeverse/lakefs:1.40
@@ -555,6 +570,7 @@ services:
       LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: trungnghia294
     profiles:
       - fs
+      - fs2
 
   lakefs-db:
     image: postgres:13
@@ -569,6 +585,7 @@ services:
       - ren294_network
     profiles:
       - fs
+      - fs2
 
   jobmanager:
     image: flink:java8
@@ -599,6 +616,7 @@ services:
       - ex1
       - one
       - fs1
+      - fs2
 
   taskmanager:
     image: flink:java8
@@ -630,6 +648,7 @@ services:
       - ex1
       - one
       - fs1
+      - fs2
 
   pinot-zookeeper:
     image: zookeeper:3.9.2
@@ -708,13 +727,15 @@ services:
       - ex1
       - one
       - fs
+      - fs1
+      - fs2
 
   spark-master:
-    image: nghia294/spark-arm64:v11.0
+    image: nghia294/spark-arm64:v12.0
     container_name: spark-master
     hostname: spark-master
     ports:
-      - "8080:8080"
+      - "8090:8080"
       - "7077:7077"
       - "10003:10000"
       - "10004:10001"
@@ -735,9 +756,10 @@ services:
     profiles:
       - hdp_spark
       - ex1
+      - fs2
 
   spark-worker:
-    image: nghia294/spark-arm64:v11.0
+    image: nghia294/spark-arm64:v12.0
     container_name: spark-worker
     depends_on:
       - spark-master
@@ -755,6 +777,7 @@ services:
     profiles:
       - hdp_spark
       - ex1
+      - fs2
 
 networks:
   ren294_network:
