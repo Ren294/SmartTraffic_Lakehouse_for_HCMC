@@ -1,0 +1,10 @@
+FROM flink:java8
+
+# Add Hadoop AWS and AWS Java SDK dependencies
+RUN wget -P /opt/flink/lib/ https://repo1.maven.org/maven2/org/apache/hadoop/hadoop-aws/3.3.6/hadoop-aws-3.3.6.jar
+RUN wget -P /opt/flink/lib/ https://repo1.maven.org/maven2/com/amazonaws/aws-java-sdk-bundle/1.11.400/aws-java-sdk-bundle-1.11.400.jar
+RUN wget -P /opt/flink/lib/ https://repo1.maven.org/maven2/org/apache/flink/flink-s3-fs-hadoop/1.20.0/flink-s3-fs-hadoop-1.20.0.jar
+
+# Set S3 filesystem provider
+ENV ENABLE_BUILT_IN_PLUGINS=flink-s3-fs-hadoop-1.20.0.jar
+
