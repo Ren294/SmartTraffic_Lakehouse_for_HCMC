@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Dict, List, Any
 from functools import reduce
 from connection import get_redis_client, get_lakefs_client, get_lakefs
-
+from config import create_spark_session
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
@@ -12,33 +12,33 @@ from lakefs import Repository, Client
 lakefs_user = get_lakefs()
 
 
-def create_spark_session():
-    """Create Spark session with necessary configurations for Hudi and lakeFS"""
-    return SparkSession.builder \
-        .appName("WeatherHCMC-Kafka-to-LakeFS-Hudi") \
-        .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
-        .config("spark.sql.extensions", "org.apache.spark.sql.hudi.HoodieSparkSessionExtension") \
-        .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.hudi.catalog.HoodieCatalog") \
-        .config("spark.kryo.registrator", "org.apache.spark.HoodieSparkKryoRegistrar") \
-        .config("spark.jars.packages",
-                "org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,"
-                "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,"
-                "org.apache.hadoop:hadoop-aws:3.3.1,"
-                "com.amazonaws:aws-java-sdk-bundle:1.11.1026,"
-                "io.lakefs:hadoop-lakefs-assembly:0.2.4") \
-        .config("spark.streaming.stopGracefullyOnShutdown", "true") \
-        .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
-        .config("spark.hadoop.fs.lakefs.impl", "io.lakefs.LakeFSFileSystem") \
-        .config("spark.hadoop.fs.lakefs.access.key", lakefs_user["username"]) \
-        .config("spark.hadoop.fs.lakefs.secret.key", lakefs_user["password"]) \
-        .config("spark.hadoop.fs.lakefs.endpoint", "http://lakefs:8000/api/v1") \
-        .config("spark.hadoop.fs.s3a.endpoint", "http://lakefs:8000") \
-        .config("spark.hadoop.fs.s3a.path.style.access", "true") \
-        .config("spark.hadoop.fs.s3a.access.key", lakefs_user["username"]) \
-        .config("spark.hadoop.fs.s3a.secret.key", lakefs_user["password"]) \
-        .config("spark.hadoop.fs.s3a.aws.credentials.provider",
-                "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider") \
-        .getOrCreate()
+# def create_spark_session():
+#     """Create Spark session with necessary configurations for Hudi and lakeFS"""
+#     return SparkSession.builder \
+#         .appName("WeatherHCMC-Kafka-to-LakeFS-Hudi") \
+#         .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
+#         .config("spark.sql.extensions", "org.apache.spark.sql.hudi.HoodieSparkSessionExtension") \
+#         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.hudi.catalog.HoodieCatalog") \
+#         .config("spark.kryo.registrator", "org.apache.spark.HoodieSparkKryoRegistrar") \
+#         .config("spark.jars.packages",
+#                 "org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,"
+#                 "org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,"
+#                 "org.apache.hadoop:hadoop-aws:3.3.1,"
+#                 "com.amazonaws:aws-java-sdk-bundle:1.11.1026,"
+#                 "io.lakefs:hadoop-lakefs-assembly:0.2.4") \
+#         .config("spark.streaming.stopGracefullyOnShutdown", "true") \
+#         .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
+#         .config("spark.hadoop.fs.lakefs.impl", "io.lakefs.LakeFSFileSystem") \
+#         .config("spark.hadoop.fs.lakefs.access.key", lakefs_user["username"]) \
+#         .config("spark.hadoop.fs.lakefs.secret.key", lakefs_user["password"]) \
+#         .config("spark.hadoop.fs.lakefs.endpoint", "http://lakefs:8000/api/v1") \
+#         .config("spark.hadoop.fs.s3a.endpoint", "http://lakefs:8000") \
+#         .config("spark.hadoop.fs.s3a.path.style.access", "true") \
+#         .config("spark.hadoop.fs.s3a.access.key", lakefs_user["username"]) \
+#         .config("spark.hadoop.fs.s3a.secret.key", lakefs_user["password"]) \
+#         .config("spark.hadoop.fs.s3a.aws.credentials.provider",
+#                 "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider") \
+#         .getOrCreate()
 
 
 def get_schema():
@@ -225,7 +225,7 @@ def process_batch(df, epoch_id, spark_session):
             # Write to Hudi table
             records_df.write \
                 .format("hudi") \
-                .options(**get_hudi_options(f"weather_{date}")) \
+                .options(**get_hudi_options(f"weather_HCMC")) \
                 .mode("append") \
                 .save(f"s3a://silver/{branch_name}/weather/")
 
@@ -244,15 +244,24 @@ def process_batch(df, epoch_id, spark_session):
                 )
                 commit_id = commit_response.get_commit().id
 
-                # Update Redis tracking
-                redis_client.hset(
-                    f"silver_{branch_name}",
-                    mapping={
-                        "date": date,
-                        "commit_id": commit_id,
-                        "metadata": json.dumps(metadata)
-                    }
-                )
+                md = {
+                    "branch": branch_name,
+                    "date": date,
+                    "commit_id": commit_id,
+                    "metadata": json.dumps(metadata)
+                }
+                # # Update Redis tracking
+                # redis_client.hset(
+                #     f"silver_{branch_name}",
+                #     mapping={
+                #         "date": date,
+                #         "commit_id": commit_id,
+                #         "metadata": json.dumps(metadata)
+                #     }
+                # )
+                redis_client.rpush("silver_merge_queue_weather",
+                                   json.dumps(md))
+
             except Exception as commit_error:
                 print(f"Error committing to branch \
                   {branch_name}: {str(commit_error)}")
@@ -265,7 +274,8 @@ def process_batch(df, epoch_id, spark_session):
 
 def process_weather_stream():
     # Create Spark session
-    spark = create_spark_session()
+    spark = create_spark_session(
+        lakefs_user["username"], lakefs_user["password"])
     schema = get_schema()
 
     # Read from Kafka
@@ -284,10 +294,11 @@ def process_weather_stream():
         *[col("csv_columns").getItem(i).cast(schema[i].dataType).alias(schema[i].name)
           for i in range(len(schema))]
     )
-
+    checkpoint_location = "file:///opt/spark-data/checkpoint_weather_silver"
     # Process the stream with spark session passed to process_batch
     query = parsed_df.writeStream \
         .foreachBatch(lambda df, epoch_id: process_batch(df, epoch_id, spark)) \
+        .option("checkpointLocation", checkpoint_location) \
         .trigger(processingTime="1 minute") \
         .start()
 
