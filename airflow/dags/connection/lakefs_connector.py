@@ -21,3 +21,7 @@ def get_lakefs_client():
     if _lakefs_client is None:
         _lakefs_client = Client(**LAKEFS_CONFIG)
     return _lakefs_client
+
+
+def get_lakefs():
+    return LAKEFS_CONFIG

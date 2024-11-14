@@ -670,7 +670,7 @@ services:
       - fs2
 
   spark-master:
-    image: nghia294/spark-arm64:v12.0
+    image: nghia294/spark-arm64:v13.0
     container_name: spark-master
     hostname: spark-master
     ports:
@@ -696,9 +696,10 @@ services:
       - hdp_spark
       - ex1
       - fs2
+      - ch1
 
   spark-worker:
-    image: nghia294/spark-arm64:v12.0
+    image: nghia294/spark-arm64:v13.0
     container_name: spark-worker
     depends_on:
       - spark-master
@@ -717,6 +718,7 @@ services:
       - hdp_spark
       - ex1
       - fs2
+      - ch1
 
   clickhouse-server:
     image: clickhouse/clickhouse-server:24
