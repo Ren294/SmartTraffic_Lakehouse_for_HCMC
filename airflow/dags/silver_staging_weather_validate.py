@@ -70,6 +70,14 @@ def commit_changes(**context):
             message=commit_message,
             metadata=metadata
         )
+        config = {
+            'source_branch': 'staging_weather',
+            'target_branch': 'main',
+            'date': merge_info['date']
+        }
+        redis_client = get_redis_client()
+        redis_client.rpush("main_merge_queue_weather",
+                           json.dumps(config))
         return {
             'status': 'success',
             'commit_id': commit.get_commit().id,

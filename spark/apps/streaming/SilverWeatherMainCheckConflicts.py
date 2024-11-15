@@ -27,8 +27,8 @@ def check_conflicts(spark, source_branch, target_branch, date):
         target_count = target_df.count()
 
         if target_count != 24:
-            raise Exception(f"Data integrity error: Target has {
-                            target_count} records. Expected 24.")
+            raise Exception(f"Data integrity error: Target has \
+              {target_count} records. Expected 24.")
 
         # Compare records by datetime to detect conflicts
         conflicts = source_df.join(
