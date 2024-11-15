@@ -299,7 +299,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - one
+      - one1
       - etl
 
   schema-registry:
@@ -327,6 +327,7 @@ services:
       - ex1
       - fs1
       - fs2
+      - one1
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.10
@@ -349,6 +350,7 @@ services:
       - ex1
       - fs1
       - fs2
+      - one1
 
   broker:
     image: confluentinc/cp-kafka:7.3.10
@@ -388,6 +390,7 @@ services:
       - ex1
       - fs1
       - fs2
+      - one1
 
   rest-proxy:
     image: confluentinc/cp-kafka-rest:7.3.10
@@ -409,6 +412,7 @@ services:
       - ex1
       - fs1
       - fs2
+      - one1
 
   redpanda:
     image: redpandadata/console:v2.7.1
@@ -427,6 +431,7 @@ services:
       - one
       - fs1
       - fs2
+      - one1
 
   debezium:
     image: debezium/connect:3.0
@@ -515,6 +520,7 @@ services:
       - fs
       - fs1
       - fs2
+      - one1
 
   minio:
     container_name: storage
@@ -617,6 +623,7 @@ services:
       - one
       - fs1
       - fs2
+      - one1
 
   taskmanager:
     image: flink:java8
@@ -649,6 +656,7 @@ services:
       - one
       - fs1
       - fs2
+      - one1
 
   redis:
     container_name: redis_traffic
@@ -668,6 +676,7 @@ services:
       - fs
       - fs1
       - fs2
+      - one1
 
   spark-master:
     image: nghia294/spark-arm64:v13.0

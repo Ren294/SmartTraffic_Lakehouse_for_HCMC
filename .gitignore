@@ -1,0 +1,8 @@
+airflow/logs/*
+lakeFs/data/*
+minio/data/*
+nifi/nifi-current/*
+redis/data/*
+spark/data/*
+**/__pycache__/
+**/.DS_Store
