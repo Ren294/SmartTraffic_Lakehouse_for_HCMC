@@ -40,6 +40,7 @@ def check_conflicts(spark, source_branch, target_branch, date):
 
         if conflicts.count() > 0:
             raise Exception("Conflicts detected in the data")
+    spark.stop()
 
     config = {
         'source_branch': source_branch,

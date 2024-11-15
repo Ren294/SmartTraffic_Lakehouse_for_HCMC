@@ -60,15 +60,12 @@ def commit_changes(**context):
     repo = Repository("silver", client=client)
     main_branch = repo.branch("main")
 
-    metadata = json.loads(merge_info['metadata'])
-
     commit_message = f"Merged weather data from staging_weather to main for date {
         merge_info['date']}"
 
     try:
         commit = main_branch.commit(
-            message=commit_message,
-            metadata=metadata
+            message=commit_message
         )
         return {
             'status': 'success',
@@ -138,3 +135,5 @@ end_dag = DummyOperator(
     task_id='end_dag',
     dag=dag
 )
+
+start_dag >> get_merge_info_task >> prepare_spark_config_task >> check_conflicts_task >> merge_data_task >> commit_changes_task >> end_dag
