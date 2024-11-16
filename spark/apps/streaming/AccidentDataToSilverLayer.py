@@ -13,7 +13,7 @@ lakefs_user = get_lakefs()
 
 
 def get_schema():
-    """Get schema definition for accidents data"""
+    """Get schema definition for accident data"""
     return StructType([
         StructField("road_name", StringType(), True),
         StructField("district", StringType(), True),
@@ -26,15 +26,16 @@ def get_schema():
         StructField("number_of_vehicles", IntegerType(), True),
         StructField("estimated_recovery_time", TimestampType(), True),
         StructField("congestion_km", DoubleType(), True),
-        StructField("description", StringType(), True)
+        StructField("description", StringType(), True),
+        # Adding date field for partitioning
+        StructField("date", StringType(), True)
     ])
 
 
 def get_hudi_options(table_name: str) -> Dict[str, str]:
     return {
         'hoodie.table.name': table_name,
-        'hoodie.datasource.write.recordkey.field': 'accident_time,road_name',
-        # We'll extract date from accident_time
+        'hoodie.datasource.write.recordkey.field': 'accident_time,road_name,district',
         'hoodie.datasource.write.partitionpath.field': 'date',
         'hoodie.datasource.write.table.name': table_name,
         'hoodie.datasource.write.operation': 'upsert',
@@ -48,39 +49,37 @@ def get_validation_conditions():
     """Return a list of validation conditions using Spark SQL expressions"""
     return [
         # Basic presence checks
-        col('accident_time').isNotNull() & col('road_name').isNotNull(),
+        col('accident_time').isNotNull(),
+        col('road_name').isNotNull(),
+        col('district').isNotNull(),
 
         # Numerical range validations
-        (col('car_involved').isNull() | (col('car_involved') >= 0)),
-        (col('motobike_involved').isNull() | (col('motobike_involved') >= 0)),
-        (col('other_involved').isNull() | (col('other_involved') >= 0)),
-        (col('accident_severity').isNull() |
-         (col('accident_severity') >= 1) & (col('accident_severity') <= 5)),
-        (col('congestion_km').isNull() | (col('congestion_km') >= 0)),
+        (col('accident_severity').isNull() | (col('accident_severity') >= 1)
+         & (col('accident_severity') <= 10)),
+        (col('number_of_vehicles').isNull() | col('number_of_vehicles') >= 0),
+        (col('congestion_km').isNull() | col('congestion_km') >= 0),
 
-        # Vehicle count validation
-        (col('number_of_vehicles').isNull() |
-         (col('number_of_vehicles') ==
-          coalesce(col('car_involved'), lit(0)) +
-          coalesce(col('motobike_involved'), lit(0)) +
-          coalesce(col('other_involved'), lit(0)))),
+        # Vehicle involvement checks
+        (col('car_involved').isNull() | col('car_involved') >= 0),
+        (col('motobike_involved').isNull() | col('motobike_involved') >= 0),
+        (col('other_involved').isNull() | col('other_involved') >= 0),
 
-        # Time validation
-        col('estimated_recovery_time').isNull() |
-        (col('estimated_recovery_time') > col('accident_time'))
+        # Timestamp validation
+        col('estimated_recovery_time').isNotNull() &
+        (col('estimated_recovery_time') >= col('accident_time'))
     ]
 
 
 def process_batch(df, epoch_id, spark_session):
-    """Process each batch of accidents data"""
+    """Process each batch of accident data"""
     try:
         client = get_lakefs_client()
         redis_client = get_redis_client()
         repo = Repository("silver", client=client)
 
         # Add date column for partitioning
-        df = df.withColumn('date', date_format(
-            col('accident_time'), 'yyyy-MM-dd'))
+        df = df.withColumn("date", date_format(
+            col("accident_time"), "yyyy-MM-dd"))
 
         # Apply all validation conditions
         validation_conditions = get_validation_conditions()
@@ -108,8 +107,9 @@ def process_batch(df, epoch_id, spark_session):
 
             branch_name = f"branch_accidents_{date}"
 
-            # Check if branch exists
             branch_exists = False
+
+            # Check if branch exists
             for branch in repo.branches():
                 if branch.id == branch_name:
                     print(f"Branch '{branch_name}' already exists.")
@@ -118,20 +118,46 @@ def process_batch(df, epoch_id, spark_session):
 
             # Create new branch if it doesn't exist
             if not branch_exists:
-                accidents_branch = repo.branch(branch_name).create(
-                    source_reference="staging_accidents")
+                accidents_branch = repo.branch(
+                    branch_name).create(source_reference="staging_accidents")
                 print("New branch created:", branch_name,
                       "with commit ID:", accidents_branch.get_commit().id)
             else:
                 accidents_branch = repo.branch(branch_name)
 
-            # Create DataFrame from records
-            records_df = spark_session.createDataFrame(records, df.schema)
+            # Process records and write to Hudi
+            schema = get_schema()
+            rows = []
+            for record in records:
+                row = []
+                for field in schema.fields:
+                    value = record[field.name]
+                    if value is None:
+                        row.append(None)
+                    else:
+                        try:
+                            if isinstance(field.dataType, StringType):
+                                row.append(str(value))
+                            elif isinstance(field.dataType, IntegerType):
+                                row.append(int(value) if value != '' else None)
+                            elif isinstance(field.dataType, DoubleType):
+                                row.append(
+                                    float(value) if value != '' else None)
+                            elif isinstance(field.dataType, TimestampType):
+                                # Already in timestamp format
+                                row.append(value)
+                            else:
+                                row.append(value)
+                        except (ValueError, TypeError):
+                            row.append(None)
+                rows.append(row)
+
+            records_df = spark_session.createDataFrame(rows, schema)
 
             # Write to Hudi table
             records_df.write \
                 .format("hudi") \
-                .options(**get_hudi_options("accidents_HCMC")) \
+                .options(**get_hudi_options(f"accidents_HCMC")) \
                 .mode("append") \
                 .save(f"s3a://silver/{branch_name}/accidents/")
 
@@ -139,15 +165,14 @@ def process_batch(df, epoch_id, spark_session):
             metadata = {
                 "date": date,
                 "records_count": str(len(records)),
-                "total_accidents": str(records_df.count()),
-                "severe_accidents": str(records_df.filter(col("accident_severity") >= 4).count()),
-                "total_vehicles_involved": str(records_df.select(
-                    sum("number_of_vehicles")).first()[0])
+                "total_accidents": str(len(records)),
+                "average_severity": str(round(sum(r["accident_severity"] for r in records) / len(records), 2)),
+                "total_congestion_km": str(round(sum(r["congestion_km"] for r in records), 2))
             }
 
             try:
                 commit_response = accidents_branch.commit(
-                    message=f"Added accidents data for {date}",
+                    message=f"Added accident data for {date}",
                     metadata=metadata
                 )
                 commit_id = commit_response.get_commit().id
@@ -158,13 +183,14 @@ def process_batch(df, epoch_id, spark_session):
                     "commit_id": commit_id,
                     "metadata": json.dumps(metadata)
                 }
+
                 # Add to Redis merge queue
                 redis_client.rpush("silver_merge_queue_accidents",
                                    json.dumps(md))
 
             except Exception as commit_error:
-                print(f"Error committing to branch \
-                  {branch_name}: {str(commit_error)}")
+                print(f"Error committing to branch {
+                      branch_name}: {str(commit_error)}")
                 raise commit_error
 
     except Exception as e:
@@ -192,7 +218,7 @@ def process_accidents_stream():
         split(col("value").cast("string"), ",").alias("csv_columns")
     ).select(
         *[col("csv_columns").getItem(i).cast(schema[i].dataType).alias(schema[i].name)
-          for i in range(len(schema))]
+          for i in range(len(schema) - 1)]  # -1 because 'date' is derived
     )
 
     checkpoint_location = "file:///opt/spark-data/checkpoint_accidents_silver"
