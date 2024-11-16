@@ -10,23 +10,26 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="99e41607-f94b-4578-a65e-1bc366a5c2ec" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/artifacts/TrafficCounterProcess_jar.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/encodings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/src/main/java/org/example/DataStreamJob.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../TrafficCounterProcess/src/main/resources/log4j2.properties" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../VehicleDataProcess/.gitignore" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../VehicleDataProcess/.idea/encodings.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../VehicleDataProcess/.idea/misc.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../VehicleDataProcess/.idea/vcs.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../VehicleDataProcess/pom.xml" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../VehicleDataProcess/src/main/java/org/example/DataStreamJob.java" afterDir="false" />
-      <change afterPath="$PROJECT_DIR$/../VehicleDataProcess/src/main/resources/log4j2.properties" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/../../../docker-compose.yml" beforeDir="false" afterPath="$PROJECT_DIR$/../../../docker-compose.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../dspark/spark-3.2.0-bin-hadoop3.2/conf/fairscheduler.xml.template" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../dspark/spark-3.2.0-bin-hadoop3.2/conf/log4j.properties.template" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../dspark/spark-3.2.0-bin-hadoop3.2/conf/metrics.properties.template" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../dspark/spark-3.2.0-bin-hadoop3.2/conf/spark-defaults.conf.template" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../dspark/spark-3.2.0-bin-hadoop3.2/conf/spark-env.sh.template" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../../../dspark/spark-3.2.0-bin-hadoop3.2/conf/workers.template" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/artifacts/project_jar.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/compiler.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/encodings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/jarRepositories.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/project.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../TrafficCounterProcess/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../VehicleDataProcess/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../VehicleDataProcess/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../out/artifacts/project_jar/project.jar" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../untitled/.gitignore" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../untitled/pom.xml" beforeDir="false" />
       <change beforePath="$PROJECT_DIR$/../untitled/src/main/java/org/example/DataStreamJob.java" beforeDir="false" />
@@ -91,6 +94,11 @@
       <workItem from="1731379445911" duration="1985000" />
       <workItem from="1731381911304" duration="6682000" />
       <workItem from="1731397778001" duration="603000" />
+      <workItem from="1731687075332" duration="19000" />
+      <workItem from="1731687154463" duration="14000" />
+      <workItem from="1731687271211" duration="11000" />
+      <workItem from="1731687392278" duration="66000" />
+      <workItem from="1731688155839" duration="3000" />
     </task>
     <servers />
   </component>

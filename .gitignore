@@ -6,3 +6,4 @@ redis/data/*
 spark/data/*
 **/__pycache__/
 **/.DS_Store
+flink/project/untitled/*
