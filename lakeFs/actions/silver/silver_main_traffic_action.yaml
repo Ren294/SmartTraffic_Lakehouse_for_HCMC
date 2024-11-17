@@ -1,0 +1,19 @@
+name: Staging Weather Data Merge to Main
+description: Triggers Airflow DAG to merge staging weather data to main
+on:
+  post-commit:
+    branches:
+    - staging_weather
+hooks:
+- id: trigger_staging_weather_merge_main
+  type: airflow
+  description: Trigger weather data merge DAG
+  properties:
+    url: "http://airflow-webserver:8080"
+    dag_id: "Staging_to_Main_Weather_Merge_DAG"
+    username: "ren294"
+    password: "ren294"
+    wait_for_dag: true
+    timeout: "30m"
+    dag_conf:
+      repository: "silver"
