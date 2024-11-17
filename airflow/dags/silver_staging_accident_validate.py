@@ -24,7 +24,7 @@ default_args = {
 def get_merge_info(**context):
     """Get merge information from Redis queue"""
     redis_client = get_redis_client()
-    merge_info = redis_client.lpop("silver_merge_queue_weather")
+    merge_info = redis_client.lpop("silver_merge_queue_accidents")
 
     if not merge_info:
         raise Exception("No merge request found in queue")
@@ -41,11 +41,11 @@ def prepare_spark_config(**context):
 
     config = {
         'source_branch': merge_info['branch'],
-        'target_branch': 'staging_weather',
+        'target_branch': 'staging_accidents',
         'date': merge_info['date']
     }
     redis_client = get_redis_client()
-    redis_client.rpush("silver_merge_queue_weather_pre_checked",
+    redis_client.rpush("silver_merge_queue_accidents_pre_checked",
                        json.dumps(config))
     context['task_instance'].xcom_push(key='spark_config', value=config)
     return config
@@ -58,11 +58,11 @@ def commit_changes(**context):
 
     client = get_lakefs_client()
     repo = Repository("silver", client=client)
-    staging_branch = repo.branch("staging_weather")
+    staging_branch = repo.branch("staging_accidents")
 
     metadata = json.loads(merge_info['metadata'])
 
-    commit_message = f"Merged weather data from \
+    commit_message = f"Merged accident data from \
       {merge_info['branch']} for date {merge_info['date']}"
 
     try:
@@ -71,17 +71,17 @@ def commit_changes(**context):
             metadata=metadata
         )
         config = {
-            'source_branch': 'staging_weather',
+            'source_branch': 'staging_accidents',
             'target_branch': 'main',
             'date': merge_info['date']
         }
         redis_client = get_redis_client()
-        redis_client.rpush("main_merge_queue_weather",
+        redis_client.rpush("main_merge_queue_accidents",
                            json.dumps(config))
         return {
             'status': 'success',
             'commit_id': commit.get_commit().id,
-            'branch': 'staging_weather'
+            'branch': 'staging_accidents'
         }
     except Exception as e:
         raise Exception(f"Failed to commit changes: {str(e)}")
@@ -89,9 +89,9 @@ def commit_changes(**context):
 
 # Create DAG
 dag = DAG(
-    'Silver_to_Staging_Weather_Merge_DAG',
+    'Silver_to_Staging_Accidents_Merge_DAG',
     default_args=default_args,
-    description='Merge weather data from silver branch to staging',
+    description='Merge accident data from silver branch to staging',
     schedule_interval=None,
     catchup=False,
     concurrency=1,
@@ -124,14 +124,14 @@ prepare_spark_config_task = PythonOperator(
 check_conflicts_task = SSHOperator(
     task_id='check_conflicts',
     ssh_hook=ssh_hook,
-    command="""/opt/spark/bin/spark-submit --master spark://spark-master:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4 /opt/spark-apps/validate/weather/SilverWeatherStagingCheckConflicts.py""",
+    command="""/opt/spark/bin/spark-submit --master spark://spark-master:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4 /opt/spark-apps/validate/accidents/SilverAccidentsStagingCheckConflicts.py""",
     dag=dag
 )
 
 merge_data_task = SSHOperator(
     task_id='merge_data',
     ssh_hook=ssh_hook,
-    command="""/opt/spark/bin/spark-submit --master spark://spark-master:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4 /opt/spark-apps/validate/weather/SilverWeatherStagingMerge.py""",
+    command="""/opt/spark/bin/spark-submit --master spark://spark-master:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4 /opt/spark-apps/validate/accidents/SilverAccidentsStagingMerge.py""",
     dag=dag
 )
 
