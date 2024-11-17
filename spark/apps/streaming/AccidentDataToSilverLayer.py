@@ -54,20 +54,50 @@ def get_validation_conditions():
         col('district').isNotNull(),
 
         # Numerical range validations
-        (col('accident_severity').isNull() | (col('accident_severity') >= 1)
-         & (col('accident_severity') <= 10)),
-        (col('number_of_vehicles').isNull() | col('number_of_vehicles') >= 0),
-        (col('congestion_km').isNull() | col('congestion_km') >= 0),
+        (col('accident_severity').isNull() |
+         ((col('accident_severity') >= 1) & (col('accident_severity') <= 10))),
+
+        # Fix: Correct syntax for number_of_vehicles validation
+        (col('number_of_vehicles').isNull() |
+         (col('number_of_vehicles') >= 0)),
+
+        # Fix: Correct syntax for congestion_km validation
+        (col('congestion_km').isNull() |
+         (col('congestion_km') >= 0)),
 
         # Vehicle involvement checks
-        (col('car_involved').isNull() | col('car_involved') >= 0),
-        (col('motobike_involved').isNull() | col('motobike_involved') >= 0),
-        (col('other_involved').isNull() | col('other_involved') >= 0),
+        (col('car_involved').isNull() |
+         (col('car_involved') >= 0)),
+
+        (col('motobike_involved').isNull() |
+         (col('motobike_involved') >= 0)),
+
+        (col('other_involved').isNull() |
+         (col('other_involved') >= 0)),
 
         # Timestamp validation
         col('estimated_recovery_time').isNotNull() &
-        (col('estimated_recovery_time') >= col('accident_time'))
+        (col('estimated_recovery_time') >= col('accident_time')),
+
+        # Additional validation: Total vehicles check
+        ((col('car_involved') + col('motobike_involved') + \
+         col('other_involved')) == col('number_of_vehicles'))
     ]
+
+
+def calculate_aggregations(df):
+    """Calculate aggregations for metadata"""
+    aggs = df.agg(
+        count("*").alias("records_count"),
+        avg("accident_severity").alias("average_severity"),
+        sum("congestion_km").alias("total_congestion_km")
+    ).collect()[0]
+
+    return {
+        "records_count": str(aggs["records_count"]),
+        "average_severity": "{:.2f}".format(float(aggs["average_severity"])),
+        "total_congestion_km": "{:.2f}".format(float(aggs["total_congestion_km"]))
+    }
 
 
 def process_batch(df, epoch_id, spark_session):
@@ -100,16 +130,16 @@ def process_batch(df, epoch_id, spark_session):
 
         # Process valid records by date
         for date_group in valid_records.groupBy("date").agg(
-            collect_list(struct([col(c) for c in df.columns])).alias("records")
+            collect_list(struct([col(c) for c in valid_records.columns])).alias(
+                "records")
         ).collect():
             date = date_group["date"]
             records = date_group["records"]
 
             branch_name = f"branch_accidents_{date}"
 
-            branch_exists = False
-
             # Check if branch exists
+            branch_exists = False
             for branch in repo.branches():
                 if branch.id == branch_name:
                     print(f"Branch '{branch_name}' already exists.")
@@ -118,41 +148,17 @@ def process_batch(df, epoch_id, spark_session):
 
             # Create new branch if it doesn't exist
             if not branch_exists:
-                accidents_branch = repo.branch(
-                    branch_name).create(source_reference="staging_accidents")
+                accidents_branch = repo.branch(branch_name).create(
+                    source_reference="staging_accidents")
                 print("New branch created:", branch_name,
                       "with commit ID:", accidents_branch.get_commit().id)
             else:
                 accidents_branch = repo.branch(branch_name)
 
-            # Process records and write to Hudi
-            schema = get_schema()
-            rows = []
-            for record in records:
-                row = []
-                for field in schema.fields:
-                    value = record[field.name]
-                    if value is None:
-                        row.append(None)
-                    else:
-                        try:
-                            if isinstance(field.dataType, StringType):
-                                row.append(str(value))
-                            elif isinstance(field.dataType, IntegerType):
-                                row.append(int(value) if value != '' else None)
-                            elif isinstance(field.dataType, DoubleType):
-                                row.append(
-                                    float(value) if value != '' else None)
-                            elif isinstance(field.dataType, TimestampType):
-                                # Already in timestamp format
-                                row.append(value)
-                            else:
-                                row.append(value)
-                        except (ValueError, TypeError):
-                            row.append(None)
-                rows.append(row)
-
-            records_df = spark_session.createDataFrame(rows, schema)
+            # Create DataFrame from records and calculate aggregations
+            records_df = spark_session.createDataFrame(
+                records, schema=get_schema())
+            aggs = calculate_aggregations(records_df)
 
             # Write to Hudi table
             records_df.write \
@@ -164,10 +170,9 @@ def process_batch(df, epoch_id, spark_session):
             # Prepare metadata
             metadata = {
                 "date": date,
-                "records_count": str(len(records)),
-                "total_accidents": str(len(records)),
-                "average_severity": str(round(sum(r["accident_severity"] for r in records) / len(records), 2)),
-                "total_congestion_km": str(round(sum(r["congestion_km"] for r in records), 2))
+                "records_count": aggs["records_count"],
+                "average_severity": aggs["average_severity"],
+                "total_congestion_km": aggs["total_congestion_km"]
             }
 
             try:
@@ -185,12 +190,12 @@ def process_batch(df, epoch_id, spark_session):
                 }
 
                 # Add to Redis merge queue
-                redis_client.rpush("silver_merge_queue_accidents",
-                                   json.dumps(md))
+                redis_client.rpush(
+                    "silver_merge_queue_accidents", json.dumps(md))
 
             except Exception as commit_error:
-                print(f"Error committing to branch {
-                      branch_name}: {str(commit_error)}")
+                print(f"Error committing to branch \
+                  {branch_name}: {str(commit_error)}")
                 raise commit_error
 
     except Exception as e:
