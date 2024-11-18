@@ -10,7 +10,7 @@ hooks:
   description: Trigger traffic data merge DAG
   properties:
     url: "http://airflow-webserver:8080"
-    dag_id: "Staging_to_Main_Accidents_Merge_DAG"
+    dag_id: "Staging_to_Main_Weather_Merge_DAG"
     username: "ren294"
     password: "ren294"
     wait_for_dag: true
