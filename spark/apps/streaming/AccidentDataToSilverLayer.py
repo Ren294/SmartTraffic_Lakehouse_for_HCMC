@@ -2,7 +2,7 @@ import json
 from datetime import datetime
 from typing import Dict, List, Any
 from functools import reduce
-from connection import get_redis_client, get_lakefs_client, get_lakefs
+from common import get_redis_client, get_lakefs_client, get_lakefs
 from config import create_spark_session
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
