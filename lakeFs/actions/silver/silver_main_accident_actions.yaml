@@ -1,16 +1,16 @@
-name: Silver Accident Data Merge
-description: Triggers Airflow DAG to merge silver accident data to staging
+name: Silver Accident Data Merge to Main
+description: Triggers Airflow DAG to merge silver accident data to main
 on:
   post-commit:
     branches:
-    - branch_accidents_*
+    - staging_accidents
 hooks:
-- id: trigger_silver_accident_merge_staging
+- id: trigger_silver_accident_merge_main
   type: airflow
   description: Trigger accident data merge DAG
   properties:
     url: "http://airflow-webserver:8080"
-    dag_id: "Silver_to_Staging_Accidents_Merge_DAG"
+    dag_id: "Staging_to_Main_Accidents_Merge_DAG"
     username: "ren294"
     password: "ren294"
     wait_for_dag: true

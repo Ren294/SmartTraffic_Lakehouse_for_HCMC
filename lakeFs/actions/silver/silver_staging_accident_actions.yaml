@@ -1,4 +1,4 @@
-name: Silver Accident Data Merge
+name: Silver Accident Data Merge to Staging
 description: Triggers Airflow DAG to merge silver accident data to staging
 on:
   post-commit:

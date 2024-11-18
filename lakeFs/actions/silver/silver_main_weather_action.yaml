@@ -1,16 +1,16 @@
-name: Staging Traffic Data Merge to Main
-description: Triggers Airflow DAG to merge staging traffic data to main
+name: Silver Weather Data Merge to Main
+description: Triggers Airflow DAG to merge silver weather data to main
 on:
   post-commit:
     branches:
-    - staging_traffic
+    - staging_weather
 hooks:
-- id: trigger_staging_traffic_merge_main
+- id: trigger_silver_weather_merge_main
   type: airflow
   description: Trigger traffic data merge DAG
   properties:
     url: "http://airflow-webserver:8080"
-    dag_id: "Staging_to_Main_Traffic_Merge_DAG"
+    dag_id: "Staging_to_Main_Accidents_Merge_DAG"
     username: "ren294"
     password: "ren294"
     wait_for_dag: true
