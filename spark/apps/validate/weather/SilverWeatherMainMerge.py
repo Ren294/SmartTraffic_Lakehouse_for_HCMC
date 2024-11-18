@@ -1,7 +1,6 @@
 import argparse
 from pyspark.sql import SparkSession
-from common import get_redis_client, get_lakefs_client, get_lakefs
-from config import create_spark_session
+from common import get_redis_client, get_lakefs_client, get_lakefs, create_spark_session
 import json
 
 lakefs_user = get_lakefs()
