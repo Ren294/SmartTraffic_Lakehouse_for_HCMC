@@ -1,6 +1,6 @@
 import argparse
 from pyspark.sql import SparkSession
-from connection import get_redis_client, get_lakefs_client, get_lakefs
+from common import get_redis_client, get_lakefs_client, get_lakefs
 from config import create_spark_session
 import json
 
