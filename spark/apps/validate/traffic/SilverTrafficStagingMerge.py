@@ -9,11 +9,11 @@ lakefs_user = get_lakefs()
 def get_hudi_options(table_name: str) -> dict:
     return {
         'hoodie.table.name': table_name,
-        'hoodie.datasource.write.recordkey.field': 'measurement_time,road_name,district',
+        'hoodie.datasource.write.recordkey.field': 'vehicle_id,timestamp,street',
         'hoodie.datasource.write.partitionpath.field': 'date',
         'hoodie.datasource.write.table.name': table_name,
         'hoodie.datasource.write.operation': 'upsert',
-        'hoodie.datasource.write.precombine.field': 'measurement_time',
+        'hoodie.datasource.write.precombine.field': 'timestamp',
         'hoodie.upsert.shuffle.parallelism': '2',
         'hoodie.insert.shuffle.parallelism': '2'
     }

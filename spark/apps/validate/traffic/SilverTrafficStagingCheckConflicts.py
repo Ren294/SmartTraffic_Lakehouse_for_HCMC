@@ -27,7 +27,7 @@ def check_conflicts(spark, source_branch, target_branch, date):
         # Compare records by unique key (measurement_time, road_name, district) to detect conflicts
         conflicts = source_df.join(
             target_df,
-            ["measurement_time", "road_name", "district", "date"],
+            ["vehicle_id", "street", "timestamp"],
             "inner"
         )
 
@@ -35,7 +35,7 @@ def check_conflicts(spark, source_branch, target_branch, date):
             # Check if there are any actual differences in the data
             # Exclude timestamp fields from comparison as they might have microsecond differences
             compare_columns = [col for col in source_df.columns
-                               if col not in ["measurement_time", "road_name", "district", "date"]]
+                               if col not in ["vehicle_id", "street", "timestamp"]]
 
             for col in compare_columns:
                 conflicts = conflicts.where(
