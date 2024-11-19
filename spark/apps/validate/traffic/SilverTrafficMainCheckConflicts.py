@@ -26,7 +26,7 @@ def check_conflicts(spark, source_branch, target_branch, date):
         # Compare records by location_id, timestamp and date to detect conflicts
         conflicts = source_df.join(
             target_df,
-            ["location_id", "timestamp", "date"],
+            ["vehicle_id", "street", "timestamp"],
             "inner"
         )
 
