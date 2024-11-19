@@ -70,9 +70,9 @@ def get_validation_conditions():
 
         # Numerical range validations
         (col('speed_kmph').isNull() | (col('speed_kmph') >= 0)),
-        (col('length_meters').isNull() | (col('length_meters') > 0)),
-        (col('width_meters').isNull() | (col('width_meters') > 0)),
-        (col('height_meters').isNull() | (col('height_meters') > 0)),
+        (col('length_meters').isNull() | (col('length_meters') >= 0)),
+        (col('width_meters').isNull() | (col('width_meters') >= 0)),
+        (col('height_meters').isNull() | (col('height_meters') >= 0)),
 
         # Additional checks
         (col('fuel_level_percentage').isNull() |
