@@ -1,175 +1,155 @@
-from airflow import DAG
-from airflow.providers.ssh.operators.ssh import SSHOperator
-from airflow.providers.ssh.hooks.ssh import SSHHook
-from airflow.operators.python import PythonOperator
-from airflow.operators.dummy import DummyOperator
-from datetime import datetime, timedelta
+import argparse
+from pyspark.sql import SparkSession
+from pyspark.sql.functions import col, lit, current_timestamp
+from common import get_redis_client, get_lakefs_client, get_lakefs, create_spark_session, get_postgres_properties
 import json
-from lakefs import Repository
-from connection import get_redis_client, get_lakefs_client
-
-# Define default arguments
-default_args = {
-    'owner': 'airflow',
-    'depends_on_past': False,
-    'start_date': datetime(2024, 1, 1),
-    'email_on_failure': True,
-    'email_on_retry': False,
-    'retries': 3,
-    'retry_delay': timedelta(minutes=5),
-}
-
-# Table names to process
-TABLES = [
-    'customer', 'employee', 'gasstation', 'inventorytransaction',
-    'invoice', 'invoicedetail', 'product', 'storagetank'
-]
+import sys
 
 
-def create_modified_branch(**context):
-    """Create a new branch for modified data based on current timestamp"""
-    client = get_lakefs_client()
-    repo = Repository("silver", client=client)
-    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    branch_name = f"gasstation_{timestamp}_modified"
-
-    # Create new branch from staging_gasstation
-    repo.create_branch(branch_name, source="staging_gasstation")
-
-    # Store branch name for later tasks
-    context['task_instance'].xcom_push(
-        key='modified_branch', value=branch_name)
-    return branch_name
-
-
-def push_to_redis(table_name, **context):
-    """Push table info to Redis queue for processing"""
-    modified_branch = context['task_instance'].xcom_pull(
-        task_ids='create_modified_branch', key='modified_branch')
-
-    config = {
-        'table_name': table_name,
-        'modified_branch': modified_branch,
-        'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-    }
-
-    redis_client = get_redis_client()
-    redis_client.rpush(f"gasstation_modified_{table_name}", json.dumps(config))
-    return config
+def parse_arguments():
+    """Parse command line arguments"""
+    parser = argparse.ArgumentParser(
+        description='Compare PostgreSQL and Hudi tables for gas station data')
+    parser.add_argument('--table',
+                        required=True,
+                        help='Table name to process')
+    parser.add_argument('--modified-branch',
+                        required=True,
+                        help='Branch name for modified data')
+    parser.add_argument('--staging-branch',
+                        default='staging_gasstation',
+                        help='Name of the staging branch (default: staging_gasstation)')
+    parser.add_argument('--base-path',
+                        default='s3a://silver',
+                        help='Base path for Hudi tables (default: s3a://silver)')
+    return parser.parse_args()
 
 
-def commit_changes(table_name, **context):
-    """Commit changes to staging branch after successful update"""
-    client = get_lakefs_client()
-    repo = Repository("silver", client=client)
-    staging_branch = repo.branch("staging_gasstation")
+def read_postgres_table(spark, table_name):
+    """Read data from PostgreSQL table"""
+    return spark.read \
+        .format("jdbc") \
+        .options(**get_postgres_properties()) \
+        .option("dbtable", f"gasstation.{table_name}") \
+        .load()
 
-    commit_message = f"Updated {table_name} table with latest changes"
-    timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 
-    metadata = {
-        'table': table_name,
-        'sync_timestamp': timestamp,
-        'type': 'hourly_sync'
-    }
+def read_hudi_table(spark, base_path, branch, table_name):
+    """Read data from Hudi table"""
+    try:
+        return spark.read.format("hudi") \
+            .load(f"{base_path}/{branch}/gasstation_{table_name}/")
+    except Exception as e:
+        print(f"No existing Hudi table found for {table_name}: {str(e)}")
+        return None
+
+
+def compare_data(spark, config):
+    """Compare data between PostgreSQL and Hudi tables"""
+    print(f"Starting comparison for table {
+          config.table} using branch {config.modified_branch}")
+
+    # Read current data from PostgreSQL
+    postgres_df = read_postgres_table(spark, config.table)
+
+    if postgres_df.count() == 0:
+        print(f"Warning: No data found in PostgreSQL for table {config.table}")
+        return
+
+    # Read data from Hudi
+    hudi_df = read_hudi_table(spark, config.base_path,
+                              config.staging_branch, config.table)
+
+    # Get primary key columns for the table
+    pk_columns = get_primary_keys(config.table)
+
+    # Initialize modified records DataFrame
+    if hudi_df is None:
+        # If no Hudi table exists, all records are new inserts
+        modified_records = postgres_df.withColumn("change_type", lit("INSERT"))
+    else:
+        # Find inserted records
+        inserted = postgres_df.join(
+            hudi_df,
+            pk_columns,
+            "left_anti"
+        ).withColumn("change_type", lit("INSERT"))
+
+        # Find deleted records
+        deleted = hudi_df.join(
+            postgres_df,
+            pk_columns,
+            "left_anti"
+        ).withColumn("change_type", lit("DELETE"))
+
+        # Find updated records
+        postgres_common = postgres_df.join(
+            hudi_df.select(*pk_columns),
+            pk_columns,
+            "inner"
+        )
+
+        updated = []
+        for col_name in postgres_df.columns:
+            if col_name not in pk_columns:
+                updated_records = postgres_common.join(
+                    hudi_df,
+                    pk_columns
+                ).where(col(f"postgres_df.{col_name}") != col(f"hudi_df.{col_name}"))
+
+                if updated_records.count() > 0:
+                    updated.append(
+                        updated_records.select(
+                            postgres_df["*"],
+                            lit("UPDATE").alias("change_type")
+                        )
+                    )
+
+        # Combine all changes
+        if updated:
+            updated_df = updated[0]
+            for df in updated[1:]:
+                updated_df = updated_df.unionAll(df)
+
+            modified_records = inserted.unionAll(deleted).unionAll(updated_df)
+        else:
+            modified_records = inserted.unionAll(deleted)
+
+    # Add timestamp column
+    modified_records = modified_records.withColumn(
+        "modified_timestamp",
+        current_timestamp()
+    )
+
+    # Write modified records to the modified branch
+    print(f"Writing modified records to branch {config.modified_branch}")
+    modified_records.write \
+        .format("hudi") \
+        .options(**get_hudi_options(f"gasstation_modified_{config.table}")) \
+        .mode("overwrite") \
+        .save(f"{config.base_path}/{config.modified_branch}/gasstation_modified_{config.table}/")
+
+
+def main():
+    """Main entry point"""
+    args = parse_arguments()
 
     try:
-        commit = staging_branch.commit(
-            message=commit_message,
-            metadata=metadata
+        lakefs_user = get_lakefs()
+        spark = create_spark_session(
+            lakefs_user["username"],
+            lakefs_user["password"]
         )
-        return {
-            'status': 'success',
-            'commit_id': commit.get_commit().id,
-            'table': table_name
-        }
+
+        compare_data(spark, args)
+        spark.stop()
+
     except Exception as e:
-        raise Exception(f"Failed to commit changes for {table_name}: {str(e)}")
+        print(f"Error processing table {args.table}: {str(e)}")
+        if 'spark' in locals():
+            spark.stop()
+        sys.exit(1)
 
 
-# Create DAG
-dag = DAG(
-    'Gasstation_Hourly_Sync_DAG',
-    default_args=default_args,
-    description='Hourly sync between PostgreSQL and Hudi tables for gas station data',
-    schedule_interval='@hourly',
-    catchup=False,
-    concurrency=1,
-    max_active_runs=1
-)
-
-# Create SSH Hook
-ssh_hook = SSHHook(ssh_conn_id='spark_server', cmd_timeout=None)
-
-# Start task
-start_dag = DummyOperator(task_id='start_dag', dag=dag)
-
-# Create modified branch task
-create_branch_task = PythonOperator(
-    task_id='create_modified_branch',
-    python_callable=create_modified_branch,
-    provide_context=True,
-    dag=dag
-)
-
-# Create dynamic tasks for each table
-compare_tasks = {}
-push_redis_tasks = {}
-update_tasks = {}
-commit_tasks = {}
-
-for table in TABLES:
-    # Compare PostgreSQL and Hudi data
-    compare_tasks[table] = SSHOperator(
-        task_id=f'compare_{table}',
-        ssh_hook=ssh_hook,
-        command=f"""/opt/spark/bin/spark-submit
-            --master spark://spark-master:7077
-            --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,
-                      org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,
-                      org.apache.hadoop:hadoop-aws:3.3.1,
-                      org.postgresql:postgresql:42.2.18
-            /opt/spark-apps/gasstation/CompareGasstationData.py --table {table}""",
-        dag=dag
-    )
-
-    # Push to Redis queue
-    push_redis_tasks[table] = PythonOperator(
-        task_id=f'push_redis_{table}',
-        python_callable=push_to_redis,
-        op_kwargs={'table_name': table},
-        provide_context=True,
-        dag=dag
-    )
-
-    # Update Hudi tables
-    update_tasks[table] = SSHOperator(
-        task_id=f'update_{table}',
-        ssh_hook=ssh_hook,
-        command=f"""/opt/spark/bin/spark-submit
-            --master spark://spark-master:7077
-            --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,
-                      org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,
-                      org.apache.hadoop:hadoop-aws:3.3.1
-            /opt/spark-apps/gasstation/UpdateGasstationData.py --table {table}""",
-        dag=dag
-    )
-
-    # Commit changes
-    commit_tasks[table] = PythonOperator(
-        task_id=f'commit_{table}',
-        python_callable=commit_changes,
-        op_kwargs={'table_name': table},
-        provide_context=True,
-        dag=dag
-    )
-
-# End task
-end_dag = DummyOperator(task_id='end_dag', dag=dag)
-
-# Set up dependencies
-start_dag >> create_branch_task
-
-for table in TABLES:
-    create_branch_task >> compare_tasks[table] >> push_redis_tasks[table] >> \
-        update_tasks[table] >> commit_tasks[table] >> end_dag
+if __name__ == "__main__":
+    main()
