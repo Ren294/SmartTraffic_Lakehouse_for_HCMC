@@ -42,6 +42,7 @@ services:
       - airflow
       - fs
       - fs2
+      - a1
     networks:
       - ren294_network
 
@@ -62,6 +63,7 @@ services:
       - all
       - fs
       - fs2
+      - a1
     networks:
       - ren294_network
 
@@ -88,6 +90,7 @@ services:
       - all
       - fs
       - fs2
+      - a1
     networks:
       - ren294_network
 
@@ -110,6 +113,7 @@ services:
       - all
       - fs
       - fs2
+      - a1
     networks:
       - ren294_network
 
@@ -137,6 +141,7 @@ services:
       - all
       - fs
       - fs2
+      - a1
     networks:
       - ren294_network
 
@@ -163,6 +168,7 @@ services:
       - all
       - fs
       - fs2
+      - a1
     networks:
       - ren294_network
 
@@ -232,6 +238,7 @@ services:
       - all
       - fs
       - fs2
+      - a1
     networks:
       - ren294_network
 
@@ -299,8 +306,10 @@ services:
     networks:
       - ren294_network
     profiles:
+      - db
       - one1
       - etl
+      - a1
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.3.10
@@ -545,6 +554,7 @@ services:
       - ex1
       - fs
       - fs2
+      - a1
 
   lakefs:
     image: treeverse/lakefs:1.40
@@ -577,6 +587,7 @@ services:
     profiles:
       - fs
       - fs2
+      - a1
 
   lakefs-db:
     image: postgres:13
@@ -592,6 +603,7 @@ services:
     profiles:
       - fs
       - fs2
+      - a1
 
   jobmanager:
     image: flink:java8
@@ -677,6 +689,7 @@ services:
       - fs1
       - fs2
       - one1
+      - a1
 
   spark-master:
     image: nghia294/spark-arm64:v13.0
@@ -709,6 +722,7 @@ services:
       - ex1
       - fs2
       - ch1
+      - a1
 
   spark-worker:
     image: nghia294/spark-arm64:v13.0
@@ -734,6 +748,7 @@ services:
       - ex1
       - fs2
       - ch1
+      - a1
 
   clickhouse-server:
     image: clickhouse/clickhouse-server:24
