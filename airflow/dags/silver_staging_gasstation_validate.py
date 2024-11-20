@@ -34,7 +34,7 @@ def create_modified_branch(**context):
     branch_name = f"gasstation_{timestamp}_modified"
 
     # Create new branch from staging_gasstation
-    repo.create_branch(branch_name, source="staging_gasstation")
+    repo.branch(branch_name).create(source_reference="staging_gasstation")
 
     # Store branch name for later tasks
     context['task_instance'].xcom_push(
@@ -56,6 +56,14 @@ def push_to_redis(table_name, **context):
     redis_client = get_redis_client()
     redis_client.rpush(f"gasstation_modified_{table_name}", json.dumps(config))
     return config
+
+
+def create_spark_submit_command(table):
+    """Create properly formatted spark-submit command"""
+    return f"""
+    /opt/spark/bin/spark-submit --master spark://spark-master:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4 \
+    /opt/spark-apps/batch/gasstation/SilverGasstationStagingCompareData.py --table {table}
+    """
 
 
 def commit_changes(table_name, **context):
@@ -89,7 +97,7 @@ def commit_changes(table_name, **context):
 
 # Create DAG
 dag = DAG(
-    'Gasstation_Hourly_Sync_DAG',
+    'Silver_Gasstation_Staging_Hourly_Sync_DAG',
     default_args=default_args,
     description='Hourly sync between PostgreSQL and Hudi tables for gas station data',
     schedule_interval='@hourly',
@@ -123,16 +131,21 @@ for table in TABLES:
     compare_tasks[table] = SSHOperator(
         task_id=f'compare_{table}',
         ssh_hook=ssh_hook,
-        command=f"""/opt/spark/bin/spark-submit
-            --master spark://spark-master:7077
-            --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,
-                      org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,
-                      org.apache.hadoop:hadoop-aws:3.3.1,
-                      org.postgresql:postgresql:42.2.18
-            /opt/spark-apps/batch/gasstation/SilverGasstationStagingCompareData.py --table {table}""",
+        command=f"""
+    /opt/spark/bin/spark-submit
+    --master spark://spark-master:7077
+    --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,
+              org.apache.kafka:kafka-clients:3.2.0,
+              org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,
+              org.apache.hadoop:hadoop-aws:3.3.1,
+              com.amazonaws:aws-java-sdk-bundle:1.11.1026,
+              io.lakefs:hadoop-lakefs-assembly:0.2.4
+    /opt/spark-apps/batch/gasstation/SilverGasstationStagingCompareData.py
+    --table {table}
+    --modified-branch {task_instance.xcom_pull(task_ids='create_modified_branch', key='modified_branch')}
+    """,
         dag=dag
     )
-
     # Push to Redis queue
     push_redis_tasks[table] = PythonOperator(
         task_id=f'push_redis_{table}',
@@ -151,7 +164,7 @@ for table in TABLES:
             --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,
                       org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,
                       org.apache.hadoop:hadoop-aws:3.3.1
-            /opt/spark-apps/batch/gasstation/SilverGasstationStagingUpdateData.py --table {table}""",
+            /opt/spark-apps/gasstation/UpdateGasstationData.py --table {table}""",
         dag=dag
     )
 
