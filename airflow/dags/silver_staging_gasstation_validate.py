@@ -129,7 +129,7 @@ for table in TABLES:
                       org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,
                       org.apache.hadoop:hadoop-aws:3.3.1,
                       org.postgresql:postgresql:42.2.18
-            /opt/spark-apps/batch/gasstation/SilverGasstationCompareData.py --table {table}""",
+            /opt/spark-apps/batch/gasstation/SilverGasstationStagingCompareData.py --table {table}""",
         dag=dag
     )
 
@@ -151,7 +151,7 @@ for table in TABLES:
             --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,
                       org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,
                       org.apache.hadoop:hadoop-aws:3.3.1
-            /opt/spark-apps/batch/gasstation/SilverGasstationUpdateData.py --table {table}""",
+            /opt/spark-apps/batch/gasstation/SilverGasstationStagingUpdateData.py --table {table}""",
         dag=dag
     )
 
