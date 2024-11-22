@@ -61,7 +61,7 @@ if __name__ == "__main__":
     merge_request = json.loads(merge_request_str)
 
     spark = create_spark_session(
-        lakefs_user["username"], lakefs_user["password"])
+        lakefs_user["username"], lakefs_user["password"], "SilverTrafficStagingCheckConflicts")
     check_conflicts(
         spark,
         merge_request["source_branch"],

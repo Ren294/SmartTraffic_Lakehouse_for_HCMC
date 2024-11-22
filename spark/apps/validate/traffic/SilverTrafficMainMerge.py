@@ -38,7 +38,7 @@ if __name__ == "__main__":
     merge_request_str = redis_client.lpop("main_merge_queue_traffic_checked")
     merge_request = json.loads(merge_request_str)
     spark = create_spark_session(
-        lakefs_user["username"], lakefs_user["password"])
+        lakefs_user["username"], lakefs_user["password"], "SilverTrafficMainMerge")
     merge_data(spark, merge_request["source_branch"],
                merge_request["target_branch"], merge_request["date"])
     spark.stop()
