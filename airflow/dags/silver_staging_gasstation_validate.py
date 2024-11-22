@@ -27,7 +27,7 @@ def create_modified_branch(**context):
     branch_name = f"gasstation_{timestamp}_modified"
 
     # Create new branch from staging_gasstation
-    repo.create_branch(branch_name, source="staging_gasstation")
+    repo.branch(branch_name).create(source_reference="staging_gasstation")
 
     context['task_instance'].xcom_push(
         key='modified_branch', value=branch_name)
@@ -63,11 +63,13 @@ def commit_changes(table_name, **context):
 
 # Create DAG
 dag = DAG(
-    'Gasstation_Data_Sync_DAG',
+    'Silver_Staging_Gasstation_Validate_DAG',
     default_args=default_args,
     description='Sync PostgreSQL changes to Hudi tables',
     schedule_interval='@hourly',
-    catchup=False
+    catchup=False,
+    concurrency=1,
+    max_active_runs=1
 )
 
 # Create SSH Hook
@@ -103,7 +105,8 @@ for table in tables:
         f"--packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,"
         f"org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,"
         f"org.postgresql:postgresql:42.2.18 "
-        f"/opt/spark-apps/gasstation/CheckChanges_{table}.py",
+        f"/opt/spark-apps/batch/gasstation/SilverCheckChangesStaging_{
+            table}.py",
         dag=dag
     )
 
@@ -122,7 +125,7 @@ for table in tables:
         ssh_hook=ssh_hook,
         command=f"/opt/spark/bin/spark-submit --master spark://spark-master:7077 "
         f"--packages org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0 "
-        f"/opt/spark-apps/gasstation/UpdateHudi_{table}.py",
+        f"/opt/spark-apps/batch/gasstation/SilverUpdateStaging_{table}.py",
         dag=dag
     )
 
