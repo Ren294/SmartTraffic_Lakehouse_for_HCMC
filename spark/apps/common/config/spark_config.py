@@ -1,10 +1,10 @@
 from pyspark.sql import SparkSession
 
 
-def create_spark_session(user, password):
+def create_spark_session(user, password, appname):
     """Create Spark session with necessary configurations for Hudi and lakeFS"""
     return SparkSession.builder \
-        .appName("WeatherHCMC-Kafka-to-LakeFS-Hudi") \
+        .appName(appname) \
         .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
         .config("spark.sql.extensions", "org.apache.spark.sql.hudi.HoodieSparkSessionExtension") \
         .config("spark.sql.catalog.spark_catalog", "org.apache.spark.sql.hudi.catalog.HoodieCatalog") \
