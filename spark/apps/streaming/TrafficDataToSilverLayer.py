@@ -217,7 +217,7 @@ def process_batch(df, epoch_id, spark_session):
 def process_traffic_stream():
     # Create Spark session
     spark = create_spark_session(
-        lakefs_user["username"], lakefs_user["password"])
+        lakefs_user["username"], lakefs_user["password"], "TrafficDataToSilverLayer")
     schema = get_schema()
 
     # Read from Kafka

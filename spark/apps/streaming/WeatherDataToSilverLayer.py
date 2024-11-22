@@ -275,7 +275,7 @@ def process_batch(df, epoch_id, spark_session):
 def process_weather_stream():
     # Create Spark session
     spark = create_spark_session(
-        lakefs_user["username"], lakefs_user["password"])
+        lakefs_user["username"], lakefs_user["password"], "WeatherDataToSilverLayer")
     schema = get_schema()
 
     # Read from Kafka
