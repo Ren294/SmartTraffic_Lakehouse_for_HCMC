@@ -37,11 +37,16 @@ class DataProcessor:
             postgres_df = self.read_postgres_table()
             return self.spark.createDataFrame([], postgres_df.schema)
 
+    def get_base_columns(self, df: DataFrame) -> list:
+        """Get list of base columns (excluding Hudi metadata columns)"""
+        return [col for col in df.columns if not col.startswith('_hoodie_') and col != 'last_update']
+
     def detect_changes(self, postgres_df: DataFrame, hudi_df: Optional[DataFrame]) -> DataFrame:
         """Detect changes between PostgreSQL and Hudi data"""
         postgres_df.createOrReplaceTempView("postgres_table")
 
-        if hudi_df is not None:
+        if hudi_df is not None and hudi_df.count() > 0:
+            base_columns = self.get_base_columns(hudi_df)
             hudi_df.createOrReplaceTempView("hudi_table")
 
             # Build comparison conditions for UPDATE
@@ -49,34 +54,41 @@ class DataProcessor:
                 f"p.{col} != h.{col}" for col in self.table_config['compare_columns']
             ])
 
-            # Find updates
-            updates_df = self.spark.sql(f"""
-                SELECT p.*, 'UPDATE' as change_type
+            # Find updates - select only base columns
+            updates_query = f"""
+                SELECT {', '.join(f'p.{col}' for col in base_columns)},
+                       'UPDATE' as change_type
                 FROM postgres_table p
                 JOIN hudi_table h
                 ON p.{self.table_config['record_key']} = h.{self.table_config['record_key']}
                 WHERE {compare_conditions}
-            """).withColumn("last_update", current_timestamp())
+            """
+            updates_df = self.spark.sql(updates_query)
 
-            # Find deletes
-            deletes_df = self.spark.sql(f"""
-                SELECT h.*, 'DELETE' as change_type
+            # Find deletes - select only base columns
+            deletes_query = f"""
+                SELECT {', '.join(f'h.{col}' for col in base_columns)},
+                       'DELETE' as change_type
                 FROM hudi_table h
                 LEFT JOIN postgres_table p
                 ON h.{self.table_config['record_key']} = p.{self.table_config['record_key']}
                 WHERE p.{self.table_config['record_key']} IS NULL
-            """).withColumn("last_update", current_timestamp())
+            """
+            deletes_df = self.spark.sql(deletes_query)
 
             # Find inserts
-            inserts_df = self.spark.sql(f"""
-                SELECT p.*, 'INSERT' as change_type
+            inserts_query = f"""
+                SELECT {', '.join(f'p.{col}' for col in base_columns)},
+                       'INSERT' as change_type
                 FROM postgres_table p
                 LEFT JOIN hudi_table h
                 ON p.{self.table_config['record_key']} = h.{self.table_config['record_key']}
                 WHERE h.{self.table_config['record_key']} IS NULL
-            """).withColumn("last_update", current_timestamp())
+            """
+            inserts_df = self.spark.sql(inserts_query)
 
-            return inserts_df.union(updates_df).union(deletes_df)
+            return inserts_df.union(updates_df).union(deletes_df) \
+                .withColumn("last_update", current_timestamp())
         else:
             # If no Hudi table exists, all records are inserts
             return postgres_df.withColumn("change_type", lit("INSERT")).withColumn("last_update", current_timestamp())
@@ -88,6 +100,16 @@ class DataProcessor:
                 raise ValueError(f"Invalid operation: {operation}")
             print(
                 f"Writing to Hudi table at {path} with operation {operation}")
+
+            if operation == 'delete':
+                hudi_df = self.read_hudi_table(path)
+                if hudi_df is not None and hudi_df.count() > 0:
+                    # Get metadata columns
+                    metadata_cols = [
+                        col for col in hudi_df.columns if col.startswith('_hoodie_')]
+                    for col in metadata_cols:
+                        df = df.withColumn(col, lit(None))
+
             df.write \
                 .format("hudi") \
                 .options(**TableConfig.get_hudi_options(self.table_name, operation)) \
