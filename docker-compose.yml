@@ -692,7 +692,7 @@ services:
       - a1
 
   spark-master:
-    image: nghia294/spark-arm64:v13.0
+    image: nghia294/spark-arm64:v14.0
     container_name: spark-master
     hostname: spark-master
     ports:
@@ -725,7 +725,7 @@ services:
       - a1
 
   spark-worker:
-    image: nghia294/spark-arm64:v13.0
+    image: nghia294/spark-arm64:v14.0
     container_name: spark-worker
     depends_on:
       - spark-master
