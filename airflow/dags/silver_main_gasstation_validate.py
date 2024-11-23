@@ -19,64 +19,63 @@ default_args = {
 }
 
 
-def create_modified_branch(**context):
-    """Create a new branch for modified data based on current timestamp"""
+def create_sync_branch(**context):
+    """Create a new branch for syncing data based on current timestamp"""
     client = get_lakefs_client()
     repo = Repository("silver", client=client)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-    branch_name = f"gasstation_{timestamp}_modified"
+    branch_name = f"gasstation_{timestamp}_sync"
 
-    # Create new branch from staging_gasstation
-    repo.branch(branch_name).create(source_reference="staging_gasstation")
+    # Create new branch from main
+    repo.branch(branch_name).create(source_reference="main")
 
-    context['task_instance'].xcom_push(
-        key='modified_branch', value=branch_name)
+    context['task_instance'].xcom_push(key='sync_branch', value=branch_name)
     return branch_name
 
 
 def push_branch_to_redis(table_name, **context):
-    """Push branch name to Redis with table-specific key"""
-    modified_branch = context['task_instance'].xcom_pull(
-        task_ids='create_modified_branch', key='modified_branch')
+    """Push branch names to Redis for table processing"""
+    sync_branch = context['task_instance'].xcom_pull(
+        task_ids='create_sync_branch', key='sync_branch')
 
     redis_client = get_redis_client()
-    redis_key = f"modified_branch_gasstation_{table_name}"
+    redis_key = f"sync_branch_gasstation_{table_name}"
 
     # Clear existing key if any
     redis_client.delete(redis_key)
 
     # Push new branch name
-    redis_client.rpush(redis_key, modified_branch)
-    print(f"Pushed branch {modified_branch} to Redis key {redis_key}")
+    redis_client.rpush(redis_key, sync_branch)
+    print(f"Pushed branch {sync_branch} to Redis key {redis_key}")
 
-    return {'redis_key': redis_key, 'branch': modified_branch}
+    return {'redis_key': redis_key, 'branch': sync_branch}
 
 
 def push_to_redis_queue(table_name, **context):
     """Push table information to Redis queue for processing"""
-    modified_branch = context['task_instance'].xcom_pull(
-        task_ids='create_modified_branch', key='modified_branch')
+    sync_branch = context['task_instance'].xcom_pull(
+        task_ids='create_sync_branch', key='sync_branch')
 
     config = {
         'table_name': table_name,
-        'modified_branch': modified_branch,
+        'sync_branch': sync_branch,
         'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
     }
 
     redis_client = get_redis_client()
-    redis_client.rpush(f"gasstation_modified_{table_name}", json.dumps(config))
+    redis_client.rpush(f"gasstation_sync_{table_name}", json.dumps(config))
     return config
 
 
-def commit_changes(**context):
-    """Commit changes to staging branch after successful update"""
+def commit_to_main(**context):
+    """Commit changes to main branch after successful update"""
     client = get_lakefs_client()
     repo = Repository("silver", client=client)
-    staging_branch = repo.branch("staging_gasstation")
+    main_branch = repo.branch("main")
 
-    commit_message = f"Updated table with latest changes"
+    commit_message = f"Synced latest changes from staging to main"
     try:
-        commit = staging_branch.commit(message=commit_message)
+        commit = main_branch.commit(message=commit_message)
         return {'status': 'success', 'commit_id': commit.get_commit().id}
     except Exception as e:
         return {'status': 'error', 'message': str(e)}
@@ -84,10 +83,10 @@ def commit_changes(**context):
 
 # Create DAG
 dag = DAG(
-    'Silver_Staging_Gasstation_Validate_DAG',
+    'Silver_Main_Gasstation_Sync_DAG',
     default_args=default_args,
-    description='Sync PostgreSQL changes to Hudi tables',
-    schedule_interval='@hourly',
+    description='Sync data from staging to main branch',
+    schedule_interval='@daily',
     catchup=False,
     concurrency=1,
     max_active_runs=1
@@ -99,10 +98,10 @@ ssh_hook = SSHHook(ssh_conn_id='spark_server', cmd_timeout=None)
 # Start task
 start_dag = DummyOperator(task_id='start_dag', dag=dag)
 
-# Create modified branch task
+# Create sync branch task
 create_branch_task = PythonOperator(
-    task_id='create_modified_branch',
-    python_callable=create_modified_branch,
+    task_id='create_sync_branch',
+    python_callable=create_sync_branch,
     provide_context=True,
     dag=dag
 )
@@ -115,11 +114,10 @@ tables = ['customer', 'employee', 'gasstation', 'inventorytransaction',
 push_branch_tasks = {}
 check_tasks = {}
 push_queue_tasks = {}
-update_tasks = {}
-commit_tasks = {}
+sync_tasks = {}
 
 for table in tables:
-    # Check changes task
+    # Push branch to Redis task
     push_branch_tasks[table] = PythonOperator(
         task_id=f'push_branch_redis_{table}',
         python_callable=push_branch_to_redis,
@@ -127,11 +125,13 @@ for table in tables:
         provide_context=True,
         dag=dag
     )
+
+    # Check changes task
     check_tasks[table] = SSHOperator(
         task_id=f'check_changes_{table}',
         ssh_hook=ssh_hook,
         command=spark_submit(
-            f"batch/gasstation/SilverCheckChangesStaging_{table}.py"),
+            f"batch/gasstation/SilverCheckMain_{table}.py"),
         dag=dag
     )
 
@@ -144,30 +144,23 @@ for table in tables:
         dag=dag
     )
 
-    # Update Hudi table task
-    update_tasks[table] = SSHOperator(
-        task_id=f'update_hudi_{table}',
+    # Sync to main task
+    sync_tasks[table] = SSHOperator(
+        task_id=f'sync_to_main_{table}',
         ssh_hook=ssh_hook,
         command=spark_submit(
-            f"batch/gasstation/SilverUpdateStaging_{table}.py"),
+            f"batch/gasstation/SilverSyncMain_{table}.py"),
         dag=dag
     )
 
-    # # Commit changes task
-    # commit_tasks[table] = PythonOperator(
-    #     task_id=f'commit_changes_{table}',
-    #     python_callable=commit_changes,
-    #     op_kwargs={'table_name': table},
-    #     provide_context=True,
-    #     dag=dag
-    # )
-
+# Commit changes task
 commit_task = PythonOperator(
-    task_id='commit_changes',
-    python_callable=commit_changes,
+    task_id='commit_to_main',
+    python_callable=commit_to_main,
     provide_context=True,
     dag=dag
 )
+
 # End task
 end_dag = DummyOperator(task_id='end_dag', dag=dag)
 
@@ -176,4 +169,4 @@ start_dag >> create_branch_task
 commit_task >> end_dag
 for table in tables:
     create_branch_task >> push_branch_tasks[table] >> check_tasks[table] >> \
-        push_queue_tasks[table] >> update_tasks[table] >> commit_task
+        push_queue_tasks[table] >> sync_tasks[table] >> commit_task
