@@ -59,7 +59,7 @@ class TableConfig:
         options = {
             'hoodie.table.name': f'gasstation_{table_name}',
             'hoodie.datasource.write.recordkey.field': table_config['record_key'],
-            'hoodie.datasource.write.precombine.field': '_hoodie_commit_time',
+            'hoodie.datasource.write.precombine.field': 'last_update',
             'hoodie.datasource.write.operation': operation,
             'hoodie.upsert.shuffle.parallelism': '2',
             'hoodie.insert.shuffle.parallelism': '2'
