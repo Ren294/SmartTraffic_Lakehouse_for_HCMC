@@ -75,8 +75,11 @@ def commit_changes(**context):
     staging_branch = repo.branch("staging_gasstation")
 
     commit_message = f"Updated table with latest changes"
-    commit = staging_branch.commit(message=commit_message)
-    return {'status': 'success', 'commit_id': commit.get_commit().id}
+    try:
+        commit = staging_branch.commit(message=commit_message)
+        return {'status': 'success', 'commit_id': commit.get_commit().id}
+    except Exception as e:
+        return {'status': 'error', 'message': str(e)}
 
 
 # Create DAG
