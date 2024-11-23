@@ -33,7 +33,7 @@ class DataProcessor:
                 .format("hudi") \
                 .load(path)
         except Exception as e:
-            print(f"Error:No existing Hudi table found at {path}: {str(e)}")
+            print(f"No existing Hudi table found at {path}")
             postgres_df = self.read_postgres_table()
             return self.spark.createDataFrame([], postgres_df.schema)
 
@@ -56,7 +56,7 @@ class DataProcessor:
                 JOIN hudi_table h
                 ON p.{self.table_config['record_key']} = h.{self.table_config['record_key']}
                 WHERE {compare_conditions}
-            """)
+            """).withColumn("last_update", current_timestamp())
 
             # Find deletes
             deletes_df = self.spark.sql(f"""
@@ -65,7 +65,7 @@ class DataProcessor:
                 LEFT JOIN postgres_table p
                 ON h.{self.table_config['record_key']} = p.{self.table_config['record_key']}
                 WHERE p.{self.table_config['record_key']} IS NULL
-            """)
+            """).withColumn("last_update", current_timestamp())
 
             # Find inserts
             inserts_df = self.spark.sql(f"""
@@ -74,16 +74,20 @@ class DataProcessor:
                 LEFT JOIN hudi_table h
                 ON p.{self.table_config['record_key']} = h.{self.table_config['record_key']}
                 WHERE h.{self.table_config['record_key']} IS NULL
-            """)
+            """).withColumn("last_update", current_timestamp())
 
             return inserts_df.union(updates_df).union(deletes_df)
         else:
             # If no Hudi table exists, all records are inserts
-            return postgres_df.withColumn("change_type", lit("INSERT"))
+            return postgres_df.withColumn("change_type", lit("INSERT")).withColumn("last_update", current_timestamp())
 
     def write_to_hudi(self, df: DataFrame, path: str, operation: str = 'upsert') -> None:
         """Write DataFrame to Hudi table"""
         if df.count() > 0:
+            if operation not in ['upsert', 'delete']:
+                raise ValueError(f"Invalid operation: {operation}")
+            print(
+                f"Writing to Hudi table at {path} with operation {operation}")
             df.write \
                 .format("hudi") \
                 .options(**TableConfig.get_hudi_options(self.table_name, operation)) \
@@ -96,7 +100,7 @@ class ChangeProcessor:
         self.table_name = table_name
         self.spark = create_spark_session(lakefs_user["username"],
                                           lakefs_user["password"],
-                                          f"gasstation_{table_name}_processor")
+                                          f"SilverStagingGasstation_{table_name}_processor")
         self.data_processor = DataProcessor(self.spark, table_name)
 
     def check_changes(self) -> None:
@@ -105,7 +109,7 @@ class ChangeProcessor:
             # Read source data
             postgres_df = self.data_processor.read_postgres_table()
             hudi_df = self.data_processor.read_hudi_table(
-                f"s3a://silver/staging_gasstation/gasstation_{self.table_name}")
+                f"s3a://silver/staging_gasstation/gasstation/{self.table_name}")
 
             # Detect changes
             changes_df = self.data_processor.detect_changes(
@@ -115,12 +119,14 @@ class ChangeProcessor:
                 # Get modified branch name from Redis
                 redis_client = get_redis_client()
                 modified_branch = redis_client.lpop(
-                    "modified_branch").decode('utf-8')
-
+                    f"modified_branch_gasstation_{self.table_name}").decode('utf-8')
+                print(f"Modified branch: {modified_branch}")
                 # Write changes to modified branch
+                path = f"s3a://silver/{modified_branch}/gasstation/gasstation_\
+                  {self.table_name}_modified".replace(" ", '')
                 self.data_processor.write_to_hudi(
                     changes_df,
-                    f"s3a://silver/{modified_branch}/gasstation_{self.table_name}_modified"
+                    path
                 )
         finally:
             self.spark.stop()
@@ -133,12 +139,10 @@ class ChangeProcessor:
             config_str = redis_client.lpop(
                 f"gasstation_modified_{self.table_name}")
             config = json.loads(config_str)
-
+            path = f"s3a://silver/{config['modified_branch']}/gasstation/gasstation_\
+                  {self.table_name}_modified".replace(" ", '')
             # Read modified data
-            modified_df = self.data_processor.read_hudi_table(
-                f"s3a://silver/\
-                  {config['modified_branch']}/gasstation_{self.table_name}_modified"
-            )
+            modified_df = self.data_processor.read_hudi_table(path)
 
             if modified_df is not None and modified_df.count() > 0:
                 # Process inserts and updates
@@ -147,8 +151,8 @@ class ChangeProcessor:
                 if inserts_updates_df.count() > 0:
                     self.data_processor.write_to_hudi(
                         inserts_updates_df.drop("change_type"),
-                        f"s3a://silver/staging_gasstation/gasstation_\
-                          {self.table_name}"
+                        f"s3a://silver/staging_gasstation/gasstation/\
+                          {self.table_name}".replace(" ", '')
                     )
 
                 # Process deletes
@@ -156,8 +160,8 @@ class ChangeProcessor:
                 if deletes_df.count() > 0:
                     self.data_processor.write_to_hudi(
                         deletes_df.drop("change_type"),
-                        f"s3a://silver/staging_gasstation/gasstation_\
-                          {self.table_name}",
+                        f"s3a://silver/staging_gasstation/gasstation/\
+                          {self.table_name}".replace(" ", ''),
                         operation='delete'
                     )
         finally:
