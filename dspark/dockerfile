@@ -43,22 +43,23 @@ ENV SPARK_VERSION=3.2.0 \
 
 RUN update-alternatives --install "/usr/bin/python" "python" "$(which python3)" 1
 
-COPY spark-3.2.0-bin-hadoop3.2 /opt/spark
+COPY spark-3.5.3-bin-hadoop3 /opt/spark
 
 RUN pip install hdfs redis lakefs delta-spark==2.0.0
 
-RUN $SPARK_HOME/bin/spark-shell --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.2.0,org.apache.kafka:kafka-clients:3.2.0,io.delta:delta-spark_2.12:3.2.0,org.apache.hudi:hudi-spark3.2-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4,org.postgresql:postgresql:42.7.4 -i /dev/null
+RUN $SPARK_HOME/bin/spark-shell --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3,org.apache.kafka:kafka-clients:3.2.0,io.delta:delta-spark_2.12:3.2.0,org.apache.hudi:hudi-spark3.5-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4,org.postgresql:postgresql:42.7.4,org.apache.spark:spark-avro_2.12:3.5.3 -i /dev/null
 
 COPY delta-core_2.12-2.0.0.jar /opt/spark/jars/
 COPY delta-storage-2.0.0.jar /opt/spark/jars/
 COPY hadoop-lakefs-assembly-0.2.4.jar /opt/spark/jars/
 COPY hadoop-aws-3.3.1.jar /opt/spark/jars/
 COPY hudi-spark3.5-bundle_2.12-0.15.0.jar /opt/spark/jars/
-COPY spark-sql-kafka-0-10_2.12-3.2.1.jar /opt/spark/jars/
+COPY spark-sql-kafka-0-10_2.12-3.5.3.jar /opt/spark/jars/
 COPY postgresql-42.7.4.jar /opt/spark/jars/
 COPY aws-java-sdk-bundle-1.11.1026.jar /opt/spark/jars/
 COPY kafka-clients-3.2.0.jar /opt/spark/jars/
 COPY mysql-connector-j-8.4.0.jar /opt/spark/jars/
+COPY spark-avro_2.12-3.5.3.jar /opt/spark/jars/
 
 WORKDIR /opt/spark
 ENV SPARK_MASTER_PORT=7077 \
