@@ -1,0 +1,2 @@
+def spark_submit(file_path):
+    return f"spark-submit --master spark://spark-master:7077 --packages org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.3,org.apache.kafka:kafka-clients:3.2.0,org.apache.hudi:hudi-spark3.5-bundle_2.12:0.15.0,org.apache.hadoop:hadoop-aws:3.3.1,com.amazonaws:aws-java-sdk-bundle:1.11.1026,io.lakefs:hadoop-lakefs-assembly:0.2.4,org.postgresql:postgresql:42.7.4,org.apache.spark:spark-avro_2.12:3.5.3 /opt/spark-apps/{file_path}"
