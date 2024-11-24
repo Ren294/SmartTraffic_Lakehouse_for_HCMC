@@ -21,7 +21,7 @@ class MainSyncProcessor:
                 .format("hudi") \
                 .load(path)
         except Exception as e:
-            print(f"No existing Hudi table found at {path}: {str(e)}")
+            print(f"No existing Hudi table found at {path}")
             return None
 
     def get_base_columns(self, df: DataFrame) -> list:
@@ -134,8 +134,8 @@ class ChangeProcessor:
                     print(f"Sync branch: {sync_branch}")
 
                     # Write changes to sync branch
-                    path = f"s3a://silver/{sync_branch}/gasstation/gasstation_{
-                        self.table_name}_sync"
+                    path = f"s3a://silver/{sync_branch}/gasstation/gasstation_\
+                      {self.table_name}_sync".replace(" ", "")
                     self.data_processor.write_to_hudi(changes_df, path)
         finally:
             self.spark.stop()
@@ -149,8 +149,8 @@ class ChangeProcessor:
                 f"gasstation_sync_{self.table_name}")
             config = json.loads(config_str)
 
-            path = f"s3a://silver/{config['sync_branch']
-                                   }/gasstation/gasstation_{self.table_name}_sync"
+            path = f"s3a://silver/{config['sync_branch']}/gasstation/gasstation_\
+              {self.table_name}_sync".replace(" ", "")
 
             # Read sync data
             sync_df = self.data_processor.read_hudi_table(path)
