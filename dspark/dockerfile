@@ -22,7 +22,9 @@ RUN apt-get update && apt-get install -y \
     openjdk-8-jdk \
     python3-simpy \
     rsync \
-    apt-utils
+    apt-utils \
+    scala \
+    git
 
 RUN ssh-keygen -t rsa -f ~/.ssh/id_rsa -P '' && \
     cat ~/.ssh/id_rsa.pub >> ~/.ssh/authorized_keys
@@ -36,8 +38,8 @@ RUN mkdir -p /root/.ssh
 RUN echo "StrictHostKeyChecking no" >> /root/.ssh/config
 
 ENV JAVA_HOME=/usr/lib/jvm/java-8-openjdk-arm64
-ENV SPARK_VERSION=3.2.0 \
-    HADOOP_VERSION=3.2 \
+ENV SPARK_VERSION=3.5.3 \
+    HADOOP_VERSION=3.3 \
     SPARK_HOME=/opt/spark \
     PYTHONHASHSEED=1
 
