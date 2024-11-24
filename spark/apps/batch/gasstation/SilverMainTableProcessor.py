@@ -108,9 +108,8 @@ class MainSyncProcessor:
 class ChangeProcessor:
     def __init__(self, table_name: str):
         self.table_name = table_name
-        self.spark = create_spark_session(lakefs_user["username"],
-                                          lakefs_user["password"],
-                                          f"SilverMainGasstation_{table_name}_processor")
+        self.spark = create_spark_session(
+            lakefs_user["username"], lakefs_user["password"], f"SilverMainGasstation_{table_name}_processor")
         self.data_processor = MainSyncProcessor(self.spark, table_name)
 
     def check_changes(self) -> None:
