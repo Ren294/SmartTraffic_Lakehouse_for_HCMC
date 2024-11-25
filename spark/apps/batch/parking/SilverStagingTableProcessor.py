@@ -94,8 +94,8 @@ class DataProcessor:
         if df.count() > 0:
             if operation not in ['upsert', 'delete']:
                 raise ValueError(f"Invalid operation: {operation}")
-            print(f"Writing to Hudi table at {
-                  path} with operation {operation}")
+            print(f"Writing to Hudi table at \
+              {path} with operation {operation}")
 
             if operation == 'delete':
                 hudi_df = self.read_hudi_table(path)
@@ -162,8 +162,8 @@ class ChangeProcessor:
                 if inserts_updates_df.count() > 0:
                     self.data_processor.write_to_hudi(
                         inserts_updates_df.drop("change_type"),
-                        f"s3a://silver/staging_parking/parking/{
-                            self.table_name}"
+                        f"s3a://silver/staging_parking/parking/\
+                          {self.table_name}"
                         .replace(" ", "")
                     )
 
@@ -171,8 +171,8 @@ class ChangeProcessor:
                 if deletes_df.count() > 0:
                     self.data_processor.write_to_hudi(
                         deletes_df.drop("change_type"),
-                        f"s3a://silver/staging_parking/parking/{
-                            self.table_name}"
+                        f"s3a://silver/staging_parking/parking/\
+                          {self.table_name}"
                         .replace(" ", ""),
                         operation='delete'
                     )
