@@ -98,8 +98,8 @@ class DataProcessor:
         if df.count() > 0:
             if operation not in ['upsert', 'delete']:
                 raise ValueError(f"Invalid operation: {operation}")
-            print(
-                f"Writing to Hudi table at {path} with operation {operation}")
+            print(f"Writing to Hudi table at \
+              {path} with operation {operation}")
 
             if operation == 'delete':
                 hudi_df = self.read_hudi_table(path)
