@@ -310,6 +310,7 @@ services:
       - one1
       - etl
       - a1
+      - a2
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.3.10
@@ -337,6 +338,7 @@ services:
       - fs1
       - fs2
       - one1
+      - a2
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.10
@@ -360,6 +362,7 @@ services:
       - fs1
       - fs2
       - one1
+      - a2
 
   broker:
     image: confluentinc/cp-kafka:7.3.10
@@ -400,6 +403,7 @@ services:
       - fs1
       - fs2
       - one1
+      - a2
 
   rest-proxy:
     image: confluentinc/cp-kafka-rest:7.3.10
@@ -422,6 +426,7 @@ services:
       - fs1
       - fs2
       - one1
+      - a2
 
   redpanda:
     image: redpandadata/console:v2.7.1
@@ -441,9 +446,10 @@ services:
       - fs1
       - fs2
       - one1
+      - a2
 
   debezium:
-    image: debezium/connect:3.0
+    image: debezium/connect:3.0.0.Final
     restart: always
     container_name: debezium
     hostname: debezium
@@ -482,6 +488,7 @@ services:
       - ren294_network
     profiles:
       - one
+      - a2
 
   debezium-ui:
     image: debezium/debezium-ui:2.2
@@ -499,6 +506,7 @@ services:
       - ren294_network
     profiles:
       - one
+      - a2
 
   nifi:
     image: nghia294/nifi:1.27
