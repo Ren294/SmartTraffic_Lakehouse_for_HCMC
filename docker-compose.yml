@@ -707,8 +707,8 @@ services:
       - HIVE_CONF_DIR=/opt/hive/conf
       - HIVE_METASTORE_URI="thrift://metastore:9083"
       - SPARK_MASTER_OPTS=-Dspark.deploy.defaultCores=1
-      - SPARK_WORKER_CORES=2
-      - SPARK_WORKER_MEMORY=2g
+      - SPARK_WORKER_CORES=4
+      - SPARK_WORKER_MEMORY=8g
     volumes:
       # - spark_master_logs:/opt/spark/logs
       - ./spark/apps:/opt/spark-apps
@@ -736,9 +736,9 @@ services:
       - SPARK_WORKLOAD=worker
       - HIVE_CONF_DIR=/opt/hive/conf
       - HIVE_METASTORE_URI="thrift://metastore:9083"
-      - SPARK_WORKER_CORES=2
-      - SPARK_WORKER_MEMORY=2g
-      - SPARK_EXECUTOR_MEMORY=1g
+      - SPARK_WORKER_CORES=4
+      - SPARK_WORKER_MEMORY=8g
+      - SPARK_EXECUTOR_MEMORY=4g
     volumes:
       - ./hiveconf:/opt/hive/conf
     networks:
