@@ -1,0 +1,19 @@
+FROM apache/superset:4.1.1
+
+USER root
+
+ENV ADMIN_USERNAME=$ADMIN_USERNAME
+ENV ADMIN_EMAIL=$ADMIN_EMAIL
+ENV ADMIN_PASSWORD=$ADMIN_PASSWORD
+
+COPY --chmod=777 ./requirements.txt /requirements.txt
+
+RUN pip install -r /requirements.txt
+
+COPY --chmod=777 ./superset-init.sh /superset-init.sh
+
+COPY --chmod=777 superset_config.py /app/
+ENV SUPERSET_CONFIG_PATH=/app/superset_config.py
+
+USER superset
+ENTRYPOINT [ "/superset-init.sh" ]
