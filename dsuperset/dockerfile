@@ -14,6 +14,7 @@ COPY --chmod=777 ./superset-init.sh /superset-init.sh
 
 COPY --chmod=777 superset_config.py /app/
 ENV SUPERSET_CONFIG_PATH=/app/superset_config.py
+COPY ./sqlalchemy_hive.py /usr/local/lib/python3.10/site-packages/pyhive/
 
 USER superset
 ENTRYPOINT [ "/superset-init.sh" ]
