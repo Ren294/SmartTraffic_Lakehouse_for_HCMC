@@ -1,0 +1,19 @@
+name: Silver Parkinglot Data Merge
+description: Triggers Airflow DAG to merge silver parkinglot data to staging
+on:
+  post-commit:
+    branches:
+    - parkinglot_*
+hooks:
+- id: trigger_silver_parkinglot_merge_staging
+  type: airflow
+  description: Trigger parkinglot data merge DAG
+  properties:
+    url: "http://airflow-webserver:8080"
+    dag_id: "Silver_to_Staging_Parkinglot_Merge_DAG"
+    username: "ren294"
+    password: "ren294"
+    wait_for_dag: true
+    timeout: "30m"
+    dag_conf:
+      repository: "silver"
