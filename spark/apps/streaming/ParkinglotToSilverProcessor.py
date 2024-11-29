@@ -2,7 +2,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
 from datetime import datetime
-from typing import Dict
+from typing import Dict, Optional
 from lakefs import Repository
 from common import get_redis_client, get_lakefs_client, get_lakefs, create_spark_session
 
@@ -87,12 +87,17 @@ def get_base_columns(df: DataFrame) -> list:
 
 def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional[DataFrame]) -> DataFrame:
     """Detect changes between staging and main data"""
-    staging_df.createOrReplaceTempView("staging_table")
 
+    staging_cols = get_base_columns(staging_df)
+    staging_df_cleaned = staging_df.select(staging_cols)
+
+    staging_df_cleaned.createOrReplaceTempView("staging_table")
+    spark.sql("SELECT current_schema();").show()
     if main_df is not None and main_df.count() > 0:
         base_columns = get_base_columns(main_df)
         main_df.createOrReplaceTempView("main_table")
-
+        staging_df_cleaned.createOrReplaceTempView("staging_table")
+        spark.sql("SELECT current_schema();").show()
         # Build comparison conditions
         compare_conditions = " OR ".join([
             f"s.{col} != m.{col}" for col in parkinglot_table_config['compare_columns']
@@ -102,8 +107,8 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
         updates_query = f"""
             SELECT {', '.join(f's.{col}' for col in base_columns)},
                     'UPDATE' as change_type
-            FROM staging_table s
-            JOIN main_table m
+            FROM default.staging_table s
+            JOIN default.main_table m
             ON s.{parkinglot_table_config['record_key']} = m.{parkinglot_table_config['record_key']}
             WHERE {compare_conditions}
         """
@@ -113,8 +118,8 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
         deletes_query = f"""
             SELECT {', '.join(f'm.{col}' for col in base_columns)},
                     'DELETE' as change_type
-            FROM main_table m
-            LEFT JOIN staging_table s
+            FROM default.main_table m
+            LEFT JOIN default.staging_table s
             ON m.{parkinglot_table_config['record_key']} = s.{parkinglot_table_config['record_key']}
             WHERE s.{parkinglot_table_config['record_key']} IS NULL
         """
@@ -124,8 +129,8 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
         inserts_query = f"""
             SELECT {', '.join(f's.{col}' for col in base_columns)},
                     'INSERT' as change_type
-            FROM staging_table s
-            LEFT JOIN main_table m
+            FROM default.staging_table s
+            LEFT JOIN default.main_table m
             ON s.{parkinglot_table_config['record_key']} = m.{parkinglot_table_config['record_key']}
             WHERE m.{parkinglot_table_config['record_key']} IS NULL
         """
@@ -135,7 +140,7 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
             .withColumn("last_update", current_timestamp())
     else:
         # If no main table exists, all records are inserts
-        return staging_df.withColumn("change_type", lit("INSERT")) \
+        return staging_df_cleaned.withColumn("change_type", lit("INSERT")) \
             .withColumn("last_update", current_timestamp())
 
 
@@ -170,10 +175,25 @@ def process_batch(df, epoch_id, spark_session):
         repo = Repository("silver", client=client)
 
         # Extract relevant data from Debezium JSON
+        # parsed_df = df.select(
+        #     from_json(col("value").cast("string"), "struct<after:struct<parkinglotid:int,name:string,location:string,totalspaces:int,availablespaces:int,carspaces:int,motorbikespaces:int,bicyclespaces:int,type:string,hourlyrate:decimal(10,2)>>").alias("parsed_value")
+        # ).select(
+        #     col("parsed_value.after.*"),
+        # )
         parsed_df = df.select(
-            from_json(col("value").cast("string"), "struct<after:struct<parkinglotid:int,name:string,location:string,totalspaces:int,availablespaces:int,carspaces:int,motorbikespaces:int,bicyclespaces:int,type:string,hourlyrate:decimal(10,2)>>").alias("parsed_value")
+            from_json(col("value").cast("string"), schema=StructType([
+                StructField("payload", StructType([
+                    StructField("after", schema)
+                ]))
+            ])).alias("parsed_payload")
         ).select(
-            col("parsed_value.after.*"),
+            col("parsed_payload.payload.after.*")
+        )
+        parsed_df = parsed_df.select(
+            "parkinglotid", "name", "location", "totalspaces",
+            "availablespaces", "carspaces", "motorbikespaces",
+            "bicyclespaces", "type",
+            col("hourlyrate").cast(DecimalType(10, 2)).alias("hourlyrate")
         )
 
         hudi_df = read_hudi_table(spark_session,
