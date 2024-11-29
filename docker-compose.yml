@@ -38,13 +38,14 @@ services:
       retries: 5
       start_period: 5s
     restart: always
+    networks:
+      - ren294_network
     profiles:
       - airflow
       - fs
       - fs2
       - a1
-    networks:
-      - ren294_network
+      - a2
 
   redis_airflow:
     image: redis:7.2-bookworm
@@ -58,14 +59,15 @@ services:
       retries: 50
       start_period: 30s
     restart: always
+    networks:
+      - ren294_network
     profiles:
       - airflow
       - all
       - fs
       - fs2
       - a1
-    networks:
-      - ren294_network
+      - a2
 
   airflow-webserver:
     <<: *airflow-common
@@ -85,14 +87,15 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - ren294_network
     profiles:
       - airflow
       - all
       - fs
       - fs2
       - a1
-    networks:
-      - ren294_network
+      - a2
 
   airflow-scheduler:
     <<: *airflow-common
@@ -108,14 +111,15 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - ren294_network
     profiles:
       - airflow
       - all
       - fs
       - fs2
       - a1
-    networks:
-      - ren294_network
+      - a2
 
   airflow-worker:
     <<: *airflow-common
@@ -136,14 +140,15 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - ren294_network
     profiles:
       - airflow
       - all
       - fs
       - fs2
       - a1
-    networks:
-      - ren294_network
+      - a2
 
   airflow-triggerer:
     <<: *airflow-common
@@ -163,14 +168,15 @@ services:
       <<: *airflow-common-depends-on
       airflow-init:
         condition: service_completed_successfully
+    networks:
+      - ren294_network
     profiles:
       - airflow
       - all
       - fs
       - fs2
       - a1
-    networks:
-      - ren294_network
+      - a2
 
   airflow-init:
     <<: *airflow-common
@@ -233,14 +239,15 @@ services:
     user: "0:0"
     volumes:
       - ${AIRFLOW_PROJ_DIR:-.}:/sources
+    networks:
+      - ren294_network
     profiles:
       - airflow
       - all
       - fs
       - fs2
       - a1
-    networks:
-      - ren294_network
+      - a2
 
   airflow-cli:
     <<: *airflow-common
@@ -563,6 +570,7 @@ services:
       - fs
       - fs2
       - a1
+      - a2
 
   lakefs:
     image: treeverse/lakefs:1.40
@@ -596,6 +604,7 @@ services:
       - fs
       - fs2
       - a1
+      - a2
 
   lakefs-db:
     image: postgres:13
@@ -612,6 +621,7 @@ services:
       - fs
       - fs2
       - a1
+      - a2
 
   jobmanager:
     image: flink:java8
@@ -700,7 +710,7 @@ services:
       - a1
 
   spark-master:
-    image: nghia294/spark-arm64:v16.0
+    image: nghia294/spark-arm64:v17.0
     container_name: spark-master
     hostname: spark-master
     ports:
@@ -731,9 +741,10 @@ services:
       - fs2
       - ch1
       - a1
+      - a2
 
   spark-worker:
-    image: nghia294/spark-arm64:v16.0
+    image: nghia294/spark-arm64:v17.0
     container_name: spark-worker
     depends_on:
       - spark-master
@@ -757,6 +768,7 @@ services:
       - fs2
       - ch1
       - a1
+      - a2
 
   clickhouse-server:
     image: clickhouse/clickhouse-server:24
