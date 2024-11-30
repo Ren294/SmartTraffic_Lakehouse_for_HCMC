@@ -708,6 +708,7 @@ services:
       - fs2
       - one1
       - a1
+      - a2
 
   spark-master:
     image: nghia294/spark-arm64:v17.0
