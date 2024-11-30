@@ -35,7 +35,7 @@ def commit_changes(**context):
 
 # Create DAG
 dag = DAG(
-    'Silver_Staging_Parking_Parkinglot_DAG',
+    'Silver_to_Staging_Parkinglot_Merge_DAG',
     default_args=default_args,
     description='Process parkinglot data from Kafka to LakeFS',
     schedule_interval='@hourly',
