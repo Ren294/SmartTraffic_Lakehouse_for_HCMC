@@ -5,7 +5,7 @@ from datetime import datetime
 from typing import Dict, Optional
 from lakefs import Repository
 from common import get_redis_client, get_lakefs_client, get_lakefs, create_spark_session
-
+import json
 lakefs_user = get_lakefs()
 
 parkinglot_table_config = {
@@ -87,55 +87,91 @@ def get_base_columns(df: DataFrame) -> list:
 
 def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional[DataFrame]) -> DataFrame:
     """Detect changes between staging and main data"""
-
     staging_cols = get_base_columns(staging_df)
     staging_df_cleaned = staging_df.select(staging_cols)
 
-    staging_df_cleaned.createOrReplaceTempView("staging_table")
-    spark.sql("SELECT current_schema();").show()
+    # staging_df_cleaned.createOrReplaceTempView("staging_table")
     if main_df is not None and main_df.count() > 0:
         base_columns = get_base_columns(main_df)
-        main_df.createOrReplaceTempView("main_table")
-        staging_df_cleaned.createOrReplaceTempView("staging_table")
-        spark.sql("SELECT current_schema();").show()
-        # Build comparison conditions
-        compare_conditions = " OR ".join([
-            f"s.{col} != m.{col}" for col in parkinglot_table_config['compare_columns']
-        ])
 
-        # Find updates
-        updates_query = f"""
-            SELECT {', '.join(f's.{col}' for col in base_columns)},
-                    'UPDATE' as change_type
-            FROM default.staging_table s
-            JOIN default.main_table m
-            ON s.{parkinglot_table_config['record_key']} = m.{parkinglot_table_config['record_key']}
-            WHERE {compare_conditions}
-        """
-        updates_df = spark.sql(updates_query)
+        # main_df.createOrReplaceTempView("main_table")
+        # staging_df_cleaned.show()
+        # staging_df_cleaned.createOrReplaceTempView("staging_table")
+        # spark.sql("show tables;").show()
+        # # Build comparison conditions
+        # compare_conditions = " OR ".join([
+        #     f"s.{col} != m.{col}" for col in parkinglot_table_config['compare_columns']
+        # ])
 
-        # Find deletes
-        deletes_query = f"""
-            SELECT {', '.join(f'm.{col}' for col in base_columns)},
-                    'DELETE' as change_type
-            FROM default.main_table m
-            LEFT JOIN default.staging_table s
-            ON m.{parkinglot_table_config['record_key']} = s.{parkinglot_table_config['record_key']}
-            WHERE s.{parkinglot_table_config['record_key']} IS NULL
-        """
-        deletes_df = spark.sql(deletes_query)
+        # # Find updates
+        # updates_query = f"""
+        #     SELECT {', '.join(f's.{col}' for col in base_columns)},
+        #             'UPDATE' as change_type
+        #     FROM staging_table s
+        #     JOIN main_table m
+        #     ON s.{parkinglot_table_config['record_key']} = m.{parkinglot_table_config['record_key']}
+        #     WHERE {compare_conditions}
+        # """
+        # updates_df = spark.sql(updates_query)
 
-        # Find inserts
-        inserts_query = f"""
-            SELECT {', '.join(f's.{col}' for col in base_columns)},
-                    'INSERT' as change_type
-            FROM default.staging_table s
-            LEFT JOIN default.main_table m
-            ON s.{parkinglot_table_config['record_key']} = m.{parkinglot_table_config['record_key']}
-            WHERE m.{parkinglot_table_config['record_key']} IS NULL
-        """
-        inserts_df = spark.sql(inserts_query)
+        # # Find deletes
+        # deletes_query = f"""
+        #     SELECT {', '.join(f'm.{col}' for col in base_columns)},
+        #             'DELETE' as change_type
+        #     FROM main_table m
+        #     LEFT JOIN staging_table s
+        #     ON m.{parkinglot_table_config['record_key']} = s.{parkinglot_table_config['record_key']}
+        #     WHERE s.{parkinglot_table_config['record_key']} IS NULL
+        # """
+        # deletes_df = spark.sql(deletes_query)
 
+        # # Find inserts
+        # inserts_query = f"""
+        #     SELECT {', '.join(f's.{col}' for col in base_columns)},
+        #             'INSERT' as change_type
+        #     FROM staging_table s
+        #     LEFT JOIN main_table m
+        #     ON s.{parkinglot_table_config['record_key']} = m.{parkinglot_table_config['record_key']}
+        #     WHERE m.{parkinglot_table_config['record_key']} IS NULL
+        # """
+        # inserts_df = spark.sql(inserts_query)
+        staging_df_renamed = staging_df_cleaned.toDF(
+            *[f"staging_{col}" for col in staging_df_cleaned.columns])
+        main_df_renamed = main_df.toDF(
+            *[f"main_{col}" for col in main_df.columns])
+        # Updates
+        updates_df = staging_df_renamed.join(main_df_renamed,
+                                             staging_df_renamed[f"staging_{parkinglot_table_config['record_key']}"] ==
+                                             main_df_renamed[f"main_\
+                                               {parkinglot_table_config['record_key']}".replace(" ", "")],
+                                             'inner') \
+            .filter(" OR ".join([
+                f"staging_{col} != main_{col}"
+                for col in parkinglot_table_config['compare_columns']
+            ])) \
+            .select([f"staging_{col}" for col in base_columns]) \
+            .toDF(*base_columns) \
+            .withColumn("change_type", lit("UPDATE"))
+
+        # Deletes
+        deletes_df = main_df_renamed.join(staging_df_renamed,
+                                          main_df_renamed[f"main_{parkinglot_table_config['record_key']}"] ==
+                                          staging_df_renamed[f"staging_\
+                                            {parkinglot_table_config['record_key']}".replace(" ", "")],
+                                          'leftanti') \
+            .select([f"main_{col}" for col in base_columns]) \
+            .toDF(*base_columns) \
+            .withColumn("change_type", lit("DELETE"))
+
+        # Inserts
+        inserts_df = staging_df_renamed.join(main_df_renamed,
+                                             staging_df_renamed[f"staging_{parkinglot_table_config['record_key']}"] ==
+                                             main_df_renamed[f"main_\
+                                               {parkinglot_table_config['record_key']}".replace(" ", "")],
+                                             'leftanti') \
+            .select([f"staging_{col}" for col in base_columns]) \
+            .toDF(*base_columns) \
+            .withColumn("change_type", lit("INSERT"))
         return inserts_df.union(updates_df).union(deletes_df) \
             .withColumn("last_update", current_timestamp())
     else:
@@ -200,6 +236,7 @@ def process_batch(df, epoch_id, spark_session):
                                   f"s3a://silver/staging_parking/parking/parkinglot")
 
         changes_df = detect_changes(spark_session, parsed_df, hudi_df)
+        changes_df.show()
         # Generate branch name based on current timestamp
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         branch_name = f"parkinglot_{timestamp}_modified"
@@ -231,6 +268,9 @@ def process_batch(df, epoch_id, spark_session):
                 'modified_branch': branch_name,
                 'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             }
+            print("===========================================================")
+            print(config)
+            print("===========================================================")
             redis_client.rpush(
                 "parking_modified_parkinglot", json.dumps(config))
 
