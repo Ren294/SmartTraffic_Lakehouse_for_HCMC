@@ -318,6 +318,7 @@ services:
       - etl
       - a1
       - a2
+      - a3
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.3.10
@@ -346,6 +347,7 @@ services:
       - fs2
       - one1
       - a2
+      - a3
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.10
@@ -370,6 +372,7 @@ services:
       - fs2
       - one1
       - a2
+      - a3
 
   broker:
     image: confluentinc/cp-kafka:7.3.10
@@ -411,6 +414,7 @@ services:
       - fs2
       - one1
       - a2
+      - a3
 
   rest-proxy:
     image: confluentinc/cp-kafka-rest:7.3.10
@@ -434,6 +438,7 @@ services:
       - fs2
       - one1
       - a2
+      - a3
 
   redpanda:
     image: redpandadata/console:v2.7.1
@@ -454,6 +459,7 @@ services:
       - fs2
       - one1
       - a2
+      - a3
 
   debezium:
     image: debezium/connect:3.0.0.Final
@@ -496,6 +502,7 @@ services:
     profiles:
       - one
       - a2
+      - a3
 
   debezium-ui:
     image: debezium/debezium-ui:2.2
@@ -514,6 +521,7 @@ services:
     profiles:
       - one
       - a2
+      - a3
 
   nifi:
     image: nghia294/nifi:1.27
@@ -654,6 +662,7 @@ services:
       - fs1
       - fs2
       - one1
+      - a3
 
   taskmanager:
     image: flink:java8
@@ -687,6 +696,7 @@ services:
       - fs1
       - fs2
       - one1
+      - a3
 
   redis:
     container_name: redis_traffic
@@ -709,6 +719,7 @@ services:
       - one1
       - a1
       - a2
+      - a3
 
   spark-master:
     image: nghia294/spark-arm64:v17.0
