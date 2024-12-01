@@ -65,6 +65,7 @@ public class ParkingLotProcessor {
                 new SimpleStringSchema(),
                 consumerProps
         );
+        consumer.setStartFromEarliest();
 
         DataStream<ParkingLotData> parkingLotStream = env
                 .addSource(consumer)
@@ -81,7 +82,8 @@ public class ParkingLotProcessor {
                                 payload.get("op").asText().equals("u"))) {
                             return new ParkingLotData(payload);
                         }
-                        return null;
+//                        return null;
+                        return new ParkingLotData(payload);
                     }
                 })
                 // Filter out null values (for delete or other operations)
@@ -91,7 +93,7 @@ public class ParkingLotProcessor {
         parkingLotStream.map(data -> {
             try (Jedis jedis = jedisPool.getResource()) {
                 String redisKey = "parking_lot_" + normalizeLocationName(data.location);
-
+                System.out.println(redisKey);
                 Map<String, String> redisData = new HashMap<>();
                 redisData.put("parkinglotid", String.valueOf(data.parkingLotId));
                 redisData.put("name", data.name);
@@ -103,10 +105,8 @@ public class ParkingLotProcessor {
                 redisData.put("bicyclespaces", String.valueOf(data.bicycleSpaces));
                 redisData.put("type", data.type);
                 redisData.put("hourlyrate", data.hourlyRate);
-
+                System.out.println(redisData);
                 jedis.hmset(redisKey, redisData);
-                // Set expiry time to 1 hour
-                jedis.expire(redisKey, 3600);
             }
             return data;
         }).print(); // Optional: print for logging
