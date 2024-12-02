@@ -1,3 +1,9 @@
+//////////////////////////////////////////////////////////////////////////////
+// Project: SmartTraffic_Lakehouse_for_HCMC
+// Author: Nguyen Trung Nghia (ren294)
+// Contact: trungnghia294@gmail.com
+// GitHub: Ren294
+//////////////////////////////////////////////////////////////////////////////
 package com.traffic_hcmc.parkingLot;
 
 import org.apache.flink.api.common.functions.MapFunction;
@@ -54,7 +60,6 @@ public class ParkingLotProcessor {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // Kafka Consumer Configuration
         Properties consumerProps = new Properties();
         consumerProps.setProperty("bootstrap.servers", "broker:29092");
         consumerProps.setProperty("group.id", "parking-lot-processor");
@@ -82,14 +87,11 @@ public class ParkingLotProcessor {
                                 payload.get("op").asText().equals("u"))) {
                             return new ParkingLotData(payload);
                         }
-//                        return null;
                         return new ParkingLotData(payload);
                     }
                 })
-                // Filter out null values (for delete or other operations)
                 .filter(data -> data != null);
 
-        // Process the stream and store in Redis
         parkingLotStream.map(data -> {
             try (Jedis jedis = jedisPool.getResource()) {
                 String redisKey = "parking_lot_" + normalizeLocationName(data.location);
@@ -109,7 +111,7 @@ public class ParkingLotProcessor {
                 jedis.hmset(redisKey, redisData);
             }
             return data;
-        }).print(); // Optional: print for logging
+        }).print();
 
         env.execute("Parking Lot Processor");
     }
