@@ -1,3 +1,10 @@
+# ###############################################################################################
+# Project: SmartTraffic_Lakehouse_for_HCMC
+# Author: Nguyen Trung Nghia (ren294)
+# Contact: trungnghia294@gmail.com
+# GitHub: Ren294
+# ###############################################################################################
+
 name: Bronze Traffic Accident Validation
 description: Triggers Airflow DAG to validate bronze traffic accident data and merge to main
 on:
