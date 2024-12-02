@@ -1,8 +1,13 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from pyspark.sql import SparkSession
 
 
 def create_spark_session(user, password, appname):
-    """Create Spark session with necessary configurations for Hudi and lakeFS"""
     return SparkSession.builder \
         .appName(appname) \
         .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
