@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from pyspark.sql import SparkSession
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
@@ -17,7 +23,6 @@ parkinglot_table_config = {
 
 
 def get_schema():
-    """Get schema definition for parkinglot data"""
     return StructType([
         StructField("parkinglotid", IntegerType(), False),
         StructField("name", StringType(), False),
@@ -48,7 +53,6 @@ def get_hudi_options(table_name: str, operation: str = 'upsert') -> Dict[str, st
 
 
 def read_hudi_table(spark: SparkSession, path: str) -> DataFrame:
-    """Read data from Hudi table"""
     try:
         return spark.read \
             .format("hudi") \
@@ -59,7 +63,6 @@ def read_hudi_table(spark: SparkSession, path: str) -> DataFrame:
 
 
 def write_to_hudi(table_name: str, spark: SparkSession, df: DataFrame, path: str, operation: str = 'upsert') -> None:
-    """Write DataFrame to Hudi table"""
     if df.count() > 0:
         if operation not in ['upsert', 'delete']:
             raise ValueError(f"Invalid operation: {operation}")
@@ -81,12 +84,10 @@ def write_to_hudi(table_name: str, spark: SparkSession, df: DataFrame, path: str
 
 
 def get_base_columns(df: DataFrame) -> list:
-    """Get list of base columns (excluding Hudi metadata columns)"""
     return [col for col in df.columns if not col.startswith('_hoodie_') and col != 'last_update']
 
 
 def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional[DataFrame]) -> DataFrame:
-    """Detect changes between staging and main data"""
     staging_cols = get_base_columns(staging_df)
     staging_df_cleaned = staging_df.select(staging_cols)
 
@@ -103,7 +104,6 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
         #     f"s.{col} != m.{col}" for col in parkinglot_table_config['compare_columns']
         # ])
 
-        # # Find updates
         # updates_query = f"""
         #     SELECT {', '.join(f's.{col}' for col in base_columns)},
         #             'UPDATE' as change_type
@@ -125,7 +125,6 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
         # """
         # deletes_df = spark.sql(deletes_query)
 
-        # # Find inserts
         # inserts_query = f"""
         #     SELECT {', '.join(f's.{col}' for col in base_columns)},
         #             'INSERT' as change_type
@@ -135,11 +134,11 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
         #     WHERE m.{parkinglot_table_config['record_key']} IS NULL
         # """
         # inserts_df = spark.sql(inserts_query)
+
         staging_df_renamed = staging_df_cleaned.toDF(
             *[f"staging_{col}" for col in staging_df_cleaned.columns])
         main_df_renamed = main_df.toDF(
             *[f"main_{col}" for col in main_df.columns])
-        # Updates
         updates_df = staging_df_renamed.join(main_df_renamed,
                                              staging_df_renamed[f"staging_{parkinglot_table_config['record_key']}"] ==
                                              main_df_renamed[f"main_\
@@ -153,7 +152,6 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
             .toDF(*base_columns) \
             .withColumn("change_type", lit("UPDATE"))
 
-        # Deletes
         deletes_df = main_df_renamed.join(staging_df_renamed,
                                           main_df_renamed[f"main_{parkinglot_table_config['record_key']}"] ==
                                           staging_df_renamed[f"staging_\
@@ -163,7 +161,6 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
             .toDF(*base_columns) \
             .withColumn("change_type", lit("DELETE"))
 
-        # Inserts
         inserts_df = staging_df_renamed.join(main_df_renamed,
                                              staging_df_renamed[f"staging_{parkinglot_table_config['record_key']}"] ==
                                              main_df_renamed[f"main_\
@@ -175,13 +172,11 @@ def detect_changes(spark: SparkSession, staging_df: DataFrame, main_df: Optional
         return inserts_df.union(updates_df).union(deletes_df) \
             .withColumn("last_update", current_timestamp())
     else:
-        # If no main table exists, all records are inserts
         return staging_df_cleaned.withColumn("change_type", lit("INSERT")) \
             .withColumn("last_update", current_timestamp())
 
 
 def write_to_hudi(self, df: DataFrame, path: str, operation: str = 'upsert') -> None:
-    """Write DataFrame to Hudi table"""
     if df.count() > 0:
         if operation not in ['upsert', 'delete']:
             raise ValueError(f"Invalid operation: {operation}")
@@ -204,13 +199,10 @@ def write_to_hudi(self, df: DataFrame, path: str, operation: str = 'upsert') -> 
 
 
 def process_batch(df, epoch_id, spark_session):
-    """Process each batch of parkinglot data"""
     try:
         client = get_lakefs_client()
         redis_client = get_redis_client()
         repo = Repository("silver", client=client)
-
-        # Extract relevant data from Debezium JSON
         # parsed_df = df.select(
         #     from_json(col("value").cast("string"), "struct<after:struct<parkinglotid:int,name:string,location:string,totalspaces:int,availablespaces:int,carspaces:int,motorbikespaces:int,bicyclespaces:int,type:string,hourlyrate:decimal(10,2)>>").alias("parsed_value")
         # ).select(
@@ -237,11 +229,9 @@ def process_batch(df, epoch_id, spark_session):
 
         changes_df = detect_changes(spark_session, parsed_df, hudi_df)
         changes_df.show()
-        # Generate branch name based on current timestamp
         timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
         branch_name = f"parkinglot_{timestamp}_modified"
 
-        # Check if branch exists
         branch_exists = False
         for branch in repo.branches():
             if branch.id == branch_name:
@@ -256,13 +246,11 @@ def process_batch(df, epoch_id, spark_session):
         else:
             parking_branch = repo.branch(branch_name)
 
-        # Write to Hudi table
         if changes_df.count() > 0:
 
             write_to_hudi("parking_parkinglot", spark_session, changes_df,
                           f"s3a://silver/{branch_name}/parking/parking_parkinglot_modified".replace(" ", ""))
 
-            # Add to Redis for processing
             config = {
                 'table_name': 'parkinglot',
                 'modified_branch': branch_name,
@@ -280,14 +268,12 @@ def process_batch(df, epoch_id, spark_session):
 
 
 def process_parkinglot_stream():
-    """Main function to process parkinglot stream from Kafka"""
     spark = create_spark_session(
         lakefs_user["username"],
         lakefs_user["password"],
         "ParkinglotToStagingSilverLayer"
     )
 
-    # Read from Kafka
     df = spark.readStream \
         .format("kafka") \
         .option("kafka.bootstrap.servers", "broker:29092") \
@@ -296,7 +282,6 @@ def process_parkinglot_stream():
         .option("failOnDataLoss", "false") \
         .load()
 
-    # Process the stream
     checkpoint_location = "file:///opt/spark-data/checkpoint_parkinglot_silver"
 
     query = df.writeStream \

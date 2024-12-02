@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 import json
 from datetime import datetime
 from typing import Dict, List, Any
@@ -12,7 +18,6 @@ lakefs_user = get_lakefs()
 
 
 def get_schema():
-    """Get schema definition for accident data"""
     return StructType([
         StructField("road_name", StringType(), True),
         StructField("district", StringType(), True),
@@ -26,7 +31,6 @@ def get_schema():
         StructField("estimated_recovery_time", TimestampType(), True),
         StructField("congestion_km", DoubleType(), True),
         StructField("description", StringType(), True),
-        # Adding date field for partitioning
         StructField("date", StringType(), True)
     ])
 
@@ -45,26 +49,20 @@ def get_hudi_options(table_name: str) -> Dict[str, str]:
 
 
 def get_validation_conditions():
-    """Return a list of validation conditions using Spark SQL expressions"""
     return [
-        # Basic presence checks
         col('accident_time').isNotNull(),
         col('road_name').isNotNull(),
         col('district').isNotNull(),
 
-        # Numerical range validations
         (col('accident_severity').isNull() |
          ((col('accident_severity') >= 1) & (col('accident_severity') <= 10))),
 
-        # Fix: Correct syntax for number_of_vehicles validation
         (col('number_of_vehicles').isNull() |
          (col('number_of_vehicles') >= 0)),
 
-        # Fix: Correct syntax for congestion_km validation
         (col('congestion_km').isNull() |
          (col('congestion_km') >= 0)),
 
-        # Vehicle involvement checks
         (col('car_involved').isNull() |
          (col('car_involved') >= 0)),
 
@@ -74,18 +72,15 @@ def get_validation_conditions():
         (col('other_involved').isNull() |
          (col('other_involved') >= 0)),
 
-        # Timestamp validation
         col('estimated_recovery_time').isNotNull() &
         (col('estimated_recovery_time') >= col('accident_time')),
 
-        # Additional validation: Total vehicles check
-        ((col('car_involved') + col('motobike_involved') + \
+        ((col('car_involved') + col('motobike_involved') +
          col('other_involved')) == col('number_of_vehicles'))
     ]
 
 
 def calculate_aggregations(df):
-    """Calculate aggregations for metadata"""
     aggs = df.agg(
         count("*").alias("records_count"),
         avg("accident_severity").alias("average_severity"),
@@ -100,25 +95,22 @@ def calculate_aggregations(df):
 
 
 def process_batch(df, epoch_id, spark_session):
-    """Process each batch of accident data"""
     try:
         client = get_lakefs_client()
         redis_client = get_redis_client()
         repo = Repository("silver", client=client)
 
-        # Add date column for partitioning
         df = df.withColumn("date", date_format(
             col("accident_time"), "yyyy-MM-dd"))
 
-        # Apply all validation conditions
         validation_conditions = get_validation_conditions()
-        combined_condition = reduce(lambda x, y: x & y, validation_conditions)
-
-        # Filter valid and invalid records
+        # combined_condition = reduce(lambda x, y: x & y, validation_conditions)
+        combined_condition = validation_conditions[0]
+        for condition in validation_conditions[1:]:
+            combined_condition = combined_condition & condition
         valid_records = df.filter(combined_condition)
         invalid_records = df.filter(~combined_condition)
 
-        # Handle invalid records
         if invalid_records.count() > 0:
             invalid_records.selectExpr("to_json(struct(*)) AS value") \
                 .write \
@@ -127,7 +119,6 @@ def process_batch(df, epoch_id, spark_session):
                 .option("topic", "accidents_dead_letter_queue") \
                 .save()
 
-        # Process valid records by date
         for date_group in valid_records.groupBy("date").agg(
             collect_list(struct([col(c) for c in valid_records.columns])).alias(
                 "records")
@@ -137,7 +128,6 @@ def process_batch(df, epoch_id, spark_session):
 
             branch_name = f"branch_accidents_{date}"
 
-            # Check if branch exists
             branch_exists = False
             for branch in repo.branches():
                 if branch.id == branch_name:
@@ -145,7 +135,6 @@ def process_batch(df, epoch_id, spark_session):
                     branch_exists = True
                     break
 
-            # Create new branch if it doesn't exist
             if not branch_exists:
                 accidents_branch = repo.branch(branch_name).create(
                     source_reference="staging_accidents")
@@ -154,19 +143,16 @@ def process_batch(df, epoch_id, spark_session):
             else:
                 accidents_branch = repo.branch(branch_name)
 
-            # Create DataFrame from records and calculate aggregations
             records_df = spark_session.createDataFrame(
                 records, schema=get_schema())
             aggs = calculate_aggregations(records_df)
 
-            # Write to Hudi table
             records_df.write \
                 .format("hudi") \
                 .options(**get_hudi_options(f"accidents_HCMC")) \
                 .mode("append") \
                 .save(f"s3a://silver/{branch_name}/accidents/")
 
-            # Prepare metadata
             metadata = {
                 "date": date,
                 "records_count": aggs["records_count"],
@@ -188,7 +174,6 @@ def process_batch(df, epoch_id, spark_session):
                     "metadata": json.dumps(metadata)
                 }
 
-                # Add to Redis merge queue
                 redis_client.rpush(
                     "silver_merge_queue_accidents", json.dumps(md))
 
@@ -203,12 +188,10 @@ def process_batch(df, epoch_id, spark_session):
 
 
 def process_accidents_stream():
-    # Create Spark session
     spark = create_spark_session(
         lakefs_user["username"], lakefs_user["password"], "AccidentDataToSilverLayer")
     schema = get_schema()
 
-    # Read from Kafka
     df = spark.readStream \
         .format("kafka") \
         .option("kafka.bootstrap.servers", "broker:29092") \
@@ -217,7 +200,6 @@ def process_accidents_stream():
         .option("failOnDataLoss", "false") \
         .load()
 
-    # Parse CSV data from Kafka
     parsed_df = df.select(
         split(col("value").cast("string"), ",").alias("csv_columns")
     ).select(
@@ -227,7 +209,6 @@ def process_accidents_stream():
 
     checkpoint_location = "file:///opt/spark-data/checkpoint_accidents_silver"
 
-    # Process the stream
     query = parsed_df.writeStream \
         .foreachBatch(lambda df, epoch_id: process_batch(df, epoch_id, spark)) \
         .option("checkpointLocation", checkpoint_location) \
