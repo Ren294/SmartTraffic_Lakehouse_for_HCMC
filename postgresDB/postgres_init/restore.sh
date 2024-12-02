@@ -1,4 +1,10 @@
 #!/bin/bash
+################################################################################################
+# Project: SmartTraffic_Lakehouse_for_HCMC
+# Author: Nguyen Trung Nghia (ren294)
+# Contact: trungnghia294@gmail.com
+# GitHub: Ren294
+################################################################################################
 
 until pg_isready -U postgres -d traffic
 do
