@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 import argparse
 from pyspark.sql import SparkSession
 from common import get_redis_client, get_lakefs_client, get_lakefs, create_spark_session
@@ -20,12 +26,10 @@ def get_hudi_options(table_name: str) -> dict:
 
 
 def merge_data(spark, source_branch, target_branch, date):
-    # Read source data
     source_df = spark.read.format("hudi") \
         .load(f"s3a://silver/{source_branch}/weather/") \
         .where(f"date = '{date}'")
 
-    # Write to target branch
     source_df.write \
         .format("hudi") \
         .options(**get_hudi_options("weather_HCMC")) \

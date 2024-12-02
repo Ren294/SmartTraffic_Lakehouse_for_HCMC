@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 import argparse
 from pyspark.sql import SparkSession
 from common import get_redis_client, get_lakefs_client, get_lakefs, create_spark_session
@@ -7,12 +13,10 @@ lakefs_user = get_lakefs()
 
 
 def check_conflicts(spark, source_branch, target_branch, date):
-    # Read source data
     source_df = spark.read.format("hudi")\
         .load(f"s3a://silver/{source_branch}/weather/")\
         .where(f"date = '{date}'")
 
-    # Read target data
     target_df = None
     try:
         target_df = spark.read.format("hudi")\
@@ -21,7 +25,6 @@ def check_conflicts(spark, source_branch, target_branch, date):
     except:
         print("No data found in main branch. Proceeding without conflict check.")
 
-    # If target_df is not empty, proceed with conflict checks
     if target_df and target_df.count() > 0:
         target_count = target_df.count()
 
@@ -29,7 +32,6 @@ def check_conflicts(spark, source_branch, target_branch, date):
             raise Exception(f"Data integrity error: Target has \
               {target_count} records. Expected 24.")
 
-        # Compare records by datetime to detect conflicts
         conflicts = source_df.join(
             target_df,
             ["datetime", "date"],
