@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from pyspark.sql import SparkSession, DataFrame
 from pyspark.sql.functions import lit, current_timestamp
 from typing import Optional
