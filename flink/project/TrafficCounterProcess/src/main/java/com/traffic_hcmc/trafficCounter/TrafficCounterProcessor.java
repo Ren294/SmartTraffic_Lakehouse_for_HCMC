@@ -1,3 +1,9 @@
+//////////////////////////////////////////////////////////////////////////////
+// Project: SmartTraffic_Lakehouse_for_HCMC
+// Author: Nguyen Trung Nghia (ren294)
+// Contact: trungnghia294@gmail.com
+// GitHub: Ren294
+//////////////////////////////////////////////////////////////////////////////
 package com.traffic_hcmc.trafficCounter;
 
 import org.apache.flink.api.common.eventtime.WatermarkStrategy;
@@ -54,7 +60,7 @@ public class TrafficCounterProcessor {
         // Kafka Consumer Configuration
         Properties consumerProps = new Properties();
         consumerProps.setProperty("bootstrap.servers", "broker:29092");
-        consumerProps.setProperty("group.id", "vehicle-processor");
+        consumerProps.setProperty("group.id", "vehicle-count-processor");
         consumerProps.setProperty("auto.offset.reset", "earliest");
 
         FlinkKafkaConsumer<String> consumer = new FlinkKafkaConsumer<>(
