@@ -1,3 +1,10 @@
+########################################################################################
+# Project: SmartTraffic_Lakehouse_for_HCMC
+# Author: Nguyen Trung Nghia (ren294)
+# Contact: trungnghia294@gmail.com
+# GitHub: Ren294
+########################################################################################
+
 x-airflow-common: &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.3}
   environment: &airflow-common-env
@@ -42,10 +49,11 @@ services:
       - ren294_network
     profiles:
       - airflow
-      - fs
+      - fss
       - fs2
       - a1
       - a2
+      - fss1
 
   redis_airflow:
     image: redis:7.2-bookworm
@@ -64,10 +72,11 @@ services:
     profiles:
       - airflow
       - all
-      - fs
+      - fss
       - fs2
       - a1
       - a2
+      - fss1
 
   airflow-webserver:
     <<: *airflow-common
@@ -92,10 +101,11 @@ services:
     profiles:
       - airflow
       - all
-      - fs
+      - fss
       - fs2
       - a1
       - a2
+      - fss1
 
   airflow-scheduler:
     <<: *airflow-common
@@ -116,10 +126,11 @@ services:
     profiles:
       - airflow
       - all
-      - fs
+      - fss
       - fs2
       - a1
       - a2
+      - fss1
 
   airflow-worker:
     <<: *airflow-common
@@ -145,10 +156,11 @@ services:
     profiles:
       - airflow
       - all
-      - fs
+      - fss
       - fs2
       - a1
       - a2
+      - fss1
 
   airflow-triggerer:
     <<: *airflow-common
@@ -173,10 +185,11 @@ services:
     profiles:
       - airflow
       - all
-      - fs
+      - fss
       - fs2
       - a1
       - a2
+      - fss1
 
   airflow-init:
     <<: *airflow-common
@@ -244,10 +257,11 @@ services:
     profiles:
       - airflow
       - all
-      - fs
+      - fss
       - fs2
       - a1
       - a2
+      - fss1
 
   airflow-cli:
     <<: *airflow-common
@@ -316,9 +330,10 @@ services:
       - db
       - one1
       - etl
-      - a1
+      - fss
       - a2
       - a3
+      - a4
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.3.10
@@ -348,6 +363,7 @@ services:
       - one1
       - a2
       - a3
+      - fss1
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.10
@@ -373,6 +389,7 @@ services:
       - one1
       - a2
       - a3
+      - fss1
 
   broker:
     image: confluentinc/cp-kafka:7.3.10
@@ -415,6 +432,7 @@ services:
       - one1
       - a2
       - a3
+      - fss1
 
   rest-proxy:
     image: confluentinc/cp-kafka-rest:7.3.10
@@ -439,6 +457,7 @@ services:
       - one1
       - a2
       - a3
+      - fss1
 
   redpanda:
     image: redpandadata/console:v2.7.1
@@ -460,6 +479,7 @@ services:
       - one1
       - a2
       - a3
+      - fss1
 
   debezium:
     image: debezium/connect:3.0.0.Final
@@ -553,6 +573,7 @@ services:
       - fs1
       - fs2
       - one1
+      - fss1
 
   minio:
     container_name: storage
@@ -579,6 +600,9 @@ services:
       - fs2
       - a1
       - a2
+      - a4
+      - fss
+      - fss1
 
   lakefs:
     image: treeverse/lakefs:1.40
@@ -613,6 +637,9 @@ services:
       - fs2
       - a1
       - a2
+      - a4
+      - fss
+      - fss1
 
   lakefs-db:
     image: postgres:13
@@ -630,6 +657,9 @@ services:
       - fs2
       - a1
       - a2
+      - a4
+      - fss
+      - fss1
 
   jobmanager:
     image: flink:java8
@@ -663,6 +693,7 @@ services:
       - fs2
       - one1
       - a3
+      - fss1
 
   taskmanager:
     image: flink:java8
@@ -697,6 +728,7 @@ services:
       - fs2
       - one1
       - a3
+      - fss1
 
   redis:
     container_name: redis_traffic
@@ -713,13 +745,14 @@ services:
     profiles:
       - ex1
       - one
-      - fs
+      - fss
       - fs1
       - fs2
       - one1
       - a1
       - a2
       - a3
+      - fss1
 
   spark-master:
     image: nghia294/spark-arm64:v17.0
@@ -737,8 +770,8 @@ services:
       - HIVE_CONF_DIR=/opt/hive/conf
       - HIVE_METASTORE_URI="thrift://metastore:9083"
       - SPARK_MASTER_OPTS=-Dspark.deploy.defaultCores=1
-      - SPARK_WORKER_CORES=4
-      - SPARK_WORKER_MEMORY=8g
+      - SPARK_WORKER_CORES=6
+      - SPARK_WORKER_MEMORY=12g
     volumes:
       # - spark_master_logs:/opt/spark/logs
       - ./spark/apps:/opt/spark-apps
@@ -754,6 +787,8 @@ services:
       - ch1
       - a1
       - a2
+      - fss
+      - fss1
 
   spark-worker:
     image: nghia294/spark-arm64:v17.0
@@ -767,9 +802,9 @@ services:
       - SPARK_WORKLOAD=worker
       - HIVE_CONF_DIR=/opt/hive/conf
       - HIVE_METASTORE_URI="thrift://metastore:9083"
-      - SPARK_WORKER_CORES=4
-      - SPARK_WORKER_MEMORY=8g
-      - SPARK_EXECUTOR_MEMORY=4g
+      - SPARK_WORKER_CORES=6
+      - SPARK_WORKER_MEMORY=12g
+      - SPARK_EXECUTOR_MEMORY=2g
     volumes:
       - ./hiveconf:/opt/hive/conf
     networks:
@@ -781,6 +816,8 @@ services:
       - ch1
       - a1
       - a2
+      - fss
+      - fss1
 
   clickhouse-server:
     image: clickhouse/clickhouse-server:24
