@@ -1,3 +1,10 @@
+################################################################################################
+# Project: SmartTraffic_Lakehouse_for_HCMC
+# Author: Nguyen Trung Nghia (ren294)
+# Contact: trungnghia294@gmail.com
+# GitHub: Ren294
+################################################################################################
+
 name: Silver Accident Data Merge to Main
 description: Triggers Airflow DAG to merge silver accident data to main
 on:

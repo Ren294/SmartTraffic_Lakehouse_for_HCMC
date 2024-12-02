@@ -1,5 +1,12 @@
-name: Silver Parkinglot Data Merge
-description: Triggers Airflow DAG to merge silver parkinglot data to staging
+################################################################################################
+# Project: SmartTraffic_Lakehouse_for_HCMC
+# Author: Nguyen Trung Nghia (ren294)
+# Contact: trungnghia294@gmail.com
+# GitHub: Ren294
+################################################################################################
+
+name: Silver Storagetank Data Merge
+description: Triggers Airflow DAG to merge silver Storagetank data to staging
 on:
   post-commit:
     branches:
