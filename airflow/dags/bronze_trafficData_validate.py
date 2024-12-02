@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
@@ -10,7 +16,6 @@ import lakefs
 
 
 def load_schema():
-    """Load JSON schema from file"""
     SCHEMA_DIR = os.path.join(os.path.dirname(
         os.path.dirname(__file__)), 'dags/schema')
 
@@ -19,26 +24,21 @@ def load_schema():
 
 
 def validate_traffic_data(**context):
-    # Extract information from the lakeFS event in run config
     lakefs_event = context['dag_run'].conf['lakeFS_event']
     branch_name = lakefs_event['branch_id']
     repository = context['dag_run'].conf['repository']
 
-    # Parse branch name components
-    # Example: branch_trafficData_Motorbike_Civilian_VH38572_2024-04_2024-04-07
     branch_parts = branch_name.replace("branch_trafficData_", "").split("_")
-    vehicle_type = branch_parts[0]        # Motorbike
-    classification = branch_parts[1]       # Civilian
-    vehicle_id = branch_parts[2]          # VH38572
-    month = branch_parts[3]               # 2024-04
-    date = branch_parts[4]                # 2024-04-07
+    vehicle_type = branch_parts[0]
+    classification = branch_parts[1]
+    vehicle_id = branch_parts[2]
+    month = branch_parts[3]
+    date = branch_parts[4]
 
-    # Get the client and create repository object
     client = get_lakefs_client()
     repo = lakefs.repository(repository, client=client)
     branch = repo.branch(branch_name)
 
-    # Construct the path for traffic data
     data_path = f"traffic_data/{vehicle_type}/{
         classification}/{vehicle_id}/{month}/{date}"
     traffic_obj = branch.object(path=data_path)
@@ -46,49 +46,40 @@ def validate_traffic_data(**context):
     if not traffic_obj.exists():
         raise Exception(f"Traffic data not found at path: {data_path}")
 
-    # Read and parse data
     data = []
     with traffic_obj.reader(mode='r') as reader:
         for line in reader:
-            if line.strip():  # Skip empty lines
+            if line.strip():
                 data.append(json.loads(line))
 
-    # Load schema from file
     schema = load_schema()
 
     for record in data:
-        # Check 1: Validate schema
         try:
             jsonschema.validate(instance=record, schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             raise ValueError(f"Schema validation failed: {str(e)}")
 
-        # Check 2: Validate vehicle type consistency
         if record['vehicle_type'] != vehicle_type:
             raise ValueError(f"Vehicle type mismatch: Expected \
               {vehicle_type}, found {record['vehicle_type']}")
 
-        # Check 3: Validate vehicle classification consistency
         if record['vehicle_classification'] != classification:
             raise ValueError(f"Classification mismatch: Expected \
               {classification}, found {record['vehicle_classification']}")
 
-        # Check 4: Validate vehicle ID consistency
         if record['vehicle_id'] != vehicle_id:
             raise ValueError(f"Vehicle ID mismatch: Expected \
               {vehicle_id}, found {record['vehicle_id']}")
 
-        # Check 5: Validate month consistency
         if record['month'] != month:
             raise ValueError(f"Month mismatch: Expected \
               {month}, found {record['month']}")
 
-        # Check 6: Validate date consistency
         if record['date'] != date:
             raise ValueError(f"Date mismatch: Expected \
               {date}, found {record['date']}")
 
-        # Check 7: Validate timestamp format and consistency with date
         try:
             timestamp = datetime.strptime(
                 record['timestamp'], "%Y-%m-%d %H:%M:%S")
@@ -99,7 +90,6 @@ def validate_traffic_data(**context):
         except ValueError as e:
             raise ValueError(f"Invalid timestamp format: {str(e)}")
 
-        # Check 8: Validate ETA is after timestamp
         try:
             eta = datetime.strptime(
                 record['estimated_time_of_arrival']['eta'], "%Y-%m-%d %H:%M:%S")
@@ -141,25 +131,20 @@ def process_merge_queue(**context):
     if merge_request_str:
         merge_request = json.loads(merge_request_str)
 
-        # Create repository object using lakefs package
         repo = lakefs.repository(merge_request['repository'], client=client)
         source_branch = repo.branch(merge_request['source_branch'])
         target_branch = repo.branch(merge_request['target_branch'])
 
         try:
-            # Get changes between source and target branches
             changes = list(target_branch.diff(other_ref=source_branch))
 
-            # Analyze the changes to detect real conflicts
             has_conflicts = False
             for change in changes:
                 if change.type == 'modified':
-                    # Check if the same file was modified in both branches
                     source_obj = source_branch.object(change['path'])
                     target_obj = target_branch.object(change['path'])
 
                     if source_obj.exists() and target_obj.exists():
-                        # If file exists in both branches, check if they're different
                         source_checksum = source_obj.stats()['checksum']
                         target_checksum = target_obj.stats()['checksum']
                         if source_checksum != target_checksum:
@@ -167,7 +152,6 @@ def process_merge_queue(**context):
                             break
 
             if not has_conflicts:
-                # If no real conflicts found, proceed with merge
                 merge_result = source_branch.merge_into(target_branch)
                 return {
                     "merge_status": "success",
@@ -176,7 +160,6 @@ def process_merge_queue(**context):
                     "merge_commit": merge_result
                 }
             else:
-                # If conflicts found, requeue the merge request
                 redis_client.rpush("merge_queue", merge_request_str)
                 return {
                     "merge_status": "requeued",

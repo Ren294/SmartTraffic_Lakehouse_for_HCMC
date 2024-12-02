@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from airflow import DAG
 from airflow.providers.ssh.operators.ssh import SSHOperator
 from airflow.providers.ssh.hooks.ssh import SSHHook
@@ -20,7 +26,6 @@ default_args = {
 
 
 def create_modified_branch(**context):
-    """Create a new branch for modified data based on current timestamp"""
     client = get_lakefs_client()
     repo = Repository("silver", client=client)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
@@ -34,7 +39,6 @@ def create_modified_branch(**context):
 
 
 def push_branch_to_redis(table_name, **context):
-    """Push branch name to Redis with table-specific key"""
     modified_branch = context['task_instance'].xcom_pull(
         task_ids='create_modified_branch', key='modified_branch')
 
@@ -49,7 +53,6 @@ def push_branch_to_redis(table_name, **context):
 
 
 def push_to_redis_queue(table_name, **context):
-    """Push table information to Redis queue for processing"""
     modified_branch = context['task_instance'].xcom_pull(
         task_ids='create_modified_branch', key='modified_branch')
 
@@ -65,7 +68,6 @@ def push_to_redis_queue(table_name, **context):
 
 
 def commit_changes(**context):
-    """Commit changes to staging branch after successful update"""
     client = get_lakefs_client()
     repo = Repository("silver", client=client)
     staging_branch = repo.branch("staging_parking")
@@ -78,7 +80,6 @@ def commit_changes(**context):
         return {'status': 'error', 'message': str(e)}
 
 
-# Create DAG
 dag = DAG(
     'Silver_Staging_Parking_Validate_DAG',
     default_args=default_args,
@@ -94,7 +95,6 @@ ssh_hook = SSHHook(ssh_conn_id='spark_server', cmd_timeout=None)
 start_dag = DummyOperator(task_id='start_dag', dag=dag)
 
 
-# Create modified branch task
 create_branch_task = PythonOperator(
     task_id='create_modified_branch',
     python_callable=create_modified_branch,
@@ -103,11 +103,9 @@ create_branch_task = PythonOperator(
 )
 
 
-# List of tables to process
 tables = ['feedback', 'owner', 'parkinglot', 'parkingrecord',
           'payment', 'promotion', 'staff', 'vehicle']
 
-# Create tasks for each table
 push_branch_tasks = {}
 check_tasks = {}
 push_queue_tasks = {}
@@ -115,7 +113,6 @@ update_tasks = {}
 commit_tasks = {}
 
 for table in tables:
-    # Check changes task
     push_branch_tasks[table] = PythonOperator(
         task_id=f'push_branch_redis_{table}',
         python_callable=push_branch_to_redis,
@@ -131,7 +128,6 @@ for table in tables:
         dag=dag
     )
 
-    # Push to Redis queue task
     push_queue_tasks[table] = PythonOperator(
         task_id=f'push_queue_{table}',
         python_callable=push_to_redis_queue,
@@ -140,7 +136,6 @@ for table in tables:
         dag=dag
     )
 
-    # Update Hudi table task
     update_tasks[table] = SSHOperator(
         task_id=f'update_hudi_{table}',
         ssh_hook=ssh_hook,
@@ -149,7 +144,6 @@ for table in tables:
         dag=dag
     )
 
-    # # Commit changes task
     # commit_tasks[table] = PythonOperator(
     #     task_id=f'commit_changes_{table}',
     #     python_callable=commit_changes,
@@ -165,10 +159,8 @@ commit_task = PythonOperator(
     provide_context=True,
     dag=dag
 )
-# End task
 end_dag = DummyOperator(task_id='end_dag', dag=dag)
 
-# Set up dependencies
 start_dag >> create_branch_task
 commit_task >> end_dag
 for table in tables:

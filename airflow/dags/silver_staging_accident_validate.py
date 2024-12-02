@@ -9,7 +9,6 @@ import redis
 from lakefs import Repository
 from connection import get_redis_client, get_lakefs_client, spark_submit
 
-# Define default arguments
 default_args = {
     'owner': 'airflow',
     'depends_on_past': False,
@@ -22,7 +21,6 @@ default_args = {
 
 
 def get_merge_info(**context):
-    """Get merge information from Redis queue"""
     redis_client = get_redis_client()
     merge_info = redis_client.lpop("silver_merge_queue_accidents")
 
@@ -35,7 +33,6 @@ def get_merge_info(**context):
 
 
 def prepare_spark_config(**context):
-    """Prepare configuration for Spark job"""
     merge_info = context['task_instance'].xcom_pull(
         task_ids='get_merge_info', key='merge_info')
 
@@ -52,7 +49,6 @@ def prepare_spark_config(**context):
 
 
 def commit_changes(**context):
-    """Commit changes to staging branch after successful merge"""
     merge_info = context['task_instance'].xcom_pull(
         task_ids='get_merge_info', key='merge_info')
 
@@ -87,7 +83,6 @@ def commit_changes(**context):
         raise Exception(f"Failed to commit changes: {str(e)}")
 
 
-# Create DAG
 dag = DAG(
     'Silver_to_Staging_Accidents_Merge_DAG',
     default_args=default_args,
@@ -98,10 +93,8 @@ dag = DAG(
     max_active_runs=1
 )
 
-# Create SSH Hook
 ssh_hook = SSHHook(ssh_conn_id='spark_server', cmd_timeout=None)
 
-# Define tasks
 start_dag = DummyOperator(
     task_id='start_dag',
     dag=dag
@@ -149,5 +142,4 @@ end_dag = DummyOperator(
     dag=dag
 )
 
-# Define task dependencies
 start_dag >> get_merge_info_task >> prepare_spark_config_task >> check_conflicts_task >> merge_data_task >> commit_changes_task >> end_dag

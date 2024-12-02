@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from airflow import DAG
 from airflow.operators.python import PythonOperator
 from airflow.operators.dummy import DummyOperator
@@ -10,7 +16,6 @@ import lakefs
 
 
 def load_schema():
-    """Load JSON schema from file"""
     SCHEMA_DIR = os.path.join(os.path.dirname(
         os.path.dirname(__file__)), 'dags/schema')
 
@@ -19,24 +24,19 @@ def load_schema():
 
 
 def validate_traffic_accident_data(**context):
-    # Extract information from the lakeFS event in run config
     lakefs_event = context['dag_run'].conf['lakeFS_event']
     branch_name = lakefs_event['branch_id']
     repository = context['dag_run'].conf['repository']
 
-    # Extract road name, district and month from branch name
-    # Example: branch_trafficAccident_DuongVoThiSau-Quan3-HCMC_2024-03
     branch_parts = branch_name.replace(
         "branch_trafficAccident_", "").split("_")
-    location_info = branch_parts[0]  # DuongVoThiSau-Quan3-HCMC
-    accident_month = branch_parts[1]  # 2024-03
+    location_info = branch_parts[0]
+    accident_month = branch_parts[1]
 
-    # Get the client and create repository object
     client = get_lakefs_client()
     repo = lakefs.repository(repository, client=client)
     branch = repo.branch(branch_name)
 
-    # Construct the path for accident data
     data_path = f"traffic_accidents/{location_info}/{accident_month}"
     accident_obj = branch.object(path=data_path)
 
@@ -44,48 +44,39 @@ def validate_traffic_accident_data(**context):
         raise Exception(
             f"Traffic accident data not found at path: {data_path}")
 
-    # Read and parse data
     data = []
     with accident_obj.reader(mode='r') as reader:
         for line in reader:
-            if line.strip():  # Skip empty lines
+            if line.strip():
                 data.append(json.loads(line))
 
-    # Load schema from file
     schema = load_schema()
 
-    # Validation checks
     road_name = location_info.split("-")[0]
     district = location_info.split("-")[1]
 
     for record in data:
-        # Check 1: Validate schema
         try:
             jsonschema.validate(instance=record, schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             raise ValueError(f"Schema validation failed: {str(e)}")
 
-        # Check 2: Validate road name consistency
         if record['road_name'].replace(" ", "") != road_name:
             raise ValueError(f"Road name mismatch: Expected \
               {road_name}, found {record['road_name']}")
 
-        # Check 3: Validate district consistency
         if record['district'].replace(" ", "") != district:
             raise ValueError(f"District mismatch: Expected \
               {district}, found {record['district']}")
 
-        # Check 4: Validate accident month consistency
         if record['accident_month'] != accident_month:
             raise ValueError(f"Month mismatch: Expected \
               {accident_month}, found {record['accident_month']}")
 
-        # Check 5: Validate number of vehicles matches vehicles_involved array
         if record['number_of_vehicles'] != len(record['vehicles_involved']):
             raise ValueError(f"Number of vehicles ({record['number_of_vehicles']}) doesn't match \
                 vehicles_involved array length ({len(record['vehicles_involved'])})")
 
-        # Check 6: Validate estimated_recovery_time is after accident_time
         accident_time = datetime.fromisoformat(record['accident_time'])
         recovery_time = datetime.fromisoformat(
             record['estimated_recovery_time'])
@@ -126,25 +117,20 @@ def process_merge_queue(**context):
     if merge_request_str:
         merge_request = json.loads(merge_request_str)
 
-        # Create repository object using lakefs package
         repo = lakefs.repository(merge_request['repository'], client=client)
         source_branch = repo.branch(merge_request['source_branch'])
         target_branch = repo.branch(merge_request['target_branch'])
 
         try:
-            # Get changes between source and target branches
             changes = list(target_branch.diff(other_ref=source_branch))
 
-            # Analyze the changes to detect real conflicts
             has_conflicts = False
             for change in changes:
                 if change.type == 'modified':
-                    # Check if the same file was modified in both branches
                     source_obj = source_branch.object(change['path'])
                     target_obj = target_branch.object(change['path'])
 
                     if source_obj.exists() and target_obj.exists():
-                        # If file exists in both branches, check if they're different
                         source_checksum = source_obj.stats()['checksum']
                         target_checksum = target_obj.stats()['checksum']
                         if source_checksum != target_checksum:
@@ -152,7 +138,6 @@ def process_merge_queue(**context):
                             break
 
             if not has_conflicts:
-                # If no real conflicts found, proceed with merge
                 merge_result = source_branch.merge_into(target_branch)
                 return {
                     "merge_status": "success",
@@ -161,7 +146,6 @@ def process_merge_queue(**context):
                     "merge_commit": merge_result
                 }
             else:
-                # If conflicts found, requeue the merge request
                 redis_client.rpush("merge_queue", merge_request_str)
                 return {
                     "merge_status": "requeued",

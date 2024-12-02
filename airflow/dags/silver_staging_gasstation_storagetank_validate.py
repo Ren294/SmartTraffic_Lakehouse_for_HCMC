@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from airflow import DAG
 from airflow.providers.ssh.operators.ssh import SSHOperator
 from airflow.providers.ssh.hooks.ssh import SSHHook
@@ -20,7 +26,6 @@ default_args = {
 
 
 def commit_changes(**context):
-    """Commit changes to staging branch"""
     client = get_lakefs_client()
     repo = Repository("silver", client=client)
     staging_branch = repo.branch("staging_gasstation")
@@ -33,21 +38,18 @@ def commit_changes(**context):
         return {'status': 'error', 'message': str(e)}
 
 
-# Create DAG
 dag = DAG(
     'Silver_to_Staging_Storagetank_Merge_DAG',
     default_args=default_args,
     description='Process storagetank data from Kafka to LakeFS',
-    schedule_interval='@hourly',
+    schedule_interval=None,
     catchup=False,
     concurrency=1,
     max_active_runs=1
 )
 
-# Create SSH Hook
 ssh_hook = SSHHook(ssh_conn_id='spark_server', cmd_timeout=None)
 
-# Define tasks
 start_dag = DummyOperator(task_id='start_dag', dag=dag)
 
 
@@ -68,5 +70,4 @@ commit_task = PythonOperator(
 
 end_dag = DummyOperator(task_id='end_dag', dag=dag)
 
-# Set up task dependencies
 start_dag >> update_hudi_task >> commit_task >> end_dag

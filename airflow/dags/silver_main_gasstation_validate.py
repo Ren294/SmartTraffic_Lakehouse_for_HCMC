@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from airflow import DAG
 from airflow.providers.ssh.operators.ssh import SSHOperator
 from airflow.providers.ssh.hooks.ssh import SSHHook
@@ -20,13 +26,11 @@ default_args = {
 
 
 def create_sync_branch(**context):
-    """Create a new branch for syncing data based on current timestamp"""
     client = get_lakefs_client()
     repo = Repository("silver", client=client)
     timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
     branch_name = f"gasstation_{timestamp}_sync"
 
-    # Create new branch from main
     repo.branch(branch_name).create(source_reference="main")
 
     context['task_instance'].xcom_push(key='sync_branch', value=branch_name)
@@ -34,17 +38,14 @@ def create_sync_branch(**context):
 
 
 def push_branch_to_redis(table_name, **context):
-    """Push branch names to Redis for table processing"""
     sync_branch = context['task_instance'].xcom_pull(
         task_ids='create_sync_branch', key='sync_branch')
 
     redis_client = get_redis_client()
     redis_key = f"sync_branch_gasstation_{table_name}"
 
-    # Clear existing key if any
     redis_client.delete(redis_key)
 
-    # Push new branch name
     redis_client.rpush(redis_key, sync_branch)
     print(f"Pushed branch {sync_branch} to Redis key {redis_key}")
 
@@ -52,7 +53,6 @@ def push_branch_to_redis(table_name, **context):
 
 
 def push_to_redis_queue(table_name, **context):
-    """Push table information to Redis queue for processing"""
     sync_branch = context['task_instance'].xcom_pull(
         task_ids='create_sync_branch', key='sync_branch')
 
@@ -68,7 +68,6 @@ def push_to_redis_queue(table_name, **context):
 
 
 def commit_to_main(**context):
-    """Commit changes to main branch after successful update"""
     client = get_lakefs_client()
     repo = Repository("silver", client=client)
     main_branch = repo.branch("main")
@@ -81,7 +80,6 @@ def commit_to_main(**context):
         return {'status': 'error', 'message': str(e)}
 
 
-# Create DAG
 dag = DAG(
     'Silver_Main_Gasstation_Sync_DAG',
     default_args=default_args,
@@ -92,13 +90,10 @@ dag = DAG(
     max_active_runs=1
 )
 
-# Create SSH Hook
 ssh_hook = SSHHook(ssh_conn_id='spark_server', cmd_timeout=None)
 
-# Start task
 start_dag = DummyOperator(task_id='start_dag', dag=dag)
 
-# Create sync branch task
 create_branch_task = PythonOperator(
     task_id='create_sync_branch',
     python_callable=create_sync_branch,
@@ -106,18 +101,15 @@ create_branch_task = PythonOperator(
     dag=dag
 )
 
-# List of tables to process
 tables = ['customer', 'employee', 'gasstation', 'inventorytransaction',
           'invoice', 'invoicedetail', 'product', 'storagetank']
 
-# Create tasks for each table
 push_branch_tasks = {}
 check_tasks = {}
 push_queue_tasks = {}
 sync_tasks = {}
 
 for table in tables:
-    # Push branch to Redis task
     push_branch_tasks[table] = PythonOperator(
         task_id=f'push_branch_redis_{table}',
         python_callable=push_branch_to_redis,
@@ -126,7 +118,6 @@ for table in tables:
         dag=dag
     )
 
-    # Check changes task
     check_tasks[table] = SSHOperator(
         task_id=f'check_changes_{table}',
         ssh_hook=ssh_hook,
@@ -135,7 +126,6 @@ for table in tables:
         dag=dag
     )
 
-    # Push to Redis queue task
     push_queue_tasks[table] = PythonOperator(
         task_id=f'push_queue_{table}',
         python_callable=push_to_redis_queue,
@@ -144,7 +134,6 @@ for table in tables:
         dag=dag
     )
 
-    # Sync to main task
     sync_tasks[table] = SSHOperator(
         task_id=f'sync_to_main_{table}',
         ssh_hook=ssh_hook,
@@ -153,7 +142,6 @@ for table in tables:
         dag=dag
     )
 
-# Commit changes task
 commit_task = PythonOperator(
     task_id='commit_to_main',
     python_callable=commit_to_main,
@@ -161,10 +149,8 @@ commit_task = PythonOperator(
     dag=dag
 )
 
-# End task
 end_dag = DummyOperator(task_id='end_dag', dag=dag)
 
-# Set up dependencies
 start_dag >> create_branch_task
 commit_task >> end_dag
 for table in tables:
