@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 import argparse
 from pyspark.sql import SparkSession
 from common import get_redis_client, get_lakefs_client, get_lakefs, create_spark_session
