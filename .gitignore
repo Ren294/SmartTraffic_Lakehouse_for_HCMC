@@ -12,3 +12,5 @@ dspark/*.jar
 postgresDB/.DS_Store
 flink/project/.DS_Store
 flink/.DS_Store
+clickhouse/data
+clickhouse/logs
