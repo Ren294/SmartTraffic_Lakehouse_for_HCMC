@@ -827,15 +827,36 @@ services:
       - "18123:8123"
       - "19000:9000"
     ulimits:
+      nproc: 65535
       nofile:
         soft: 262144
         hard: 262144
     volumes:
       - ./clickhouse/data:/var/lib/clickhouse
       - ./clickhouse/logs:/var/log/clickhouse-server
-    # environment:
-    #   - CLICKHOUSE_USER=ren294
-    #   - CLICKHOUSE_PASSWORD=trungnghia294
+      - ./clickhouse/config/config.xml:/etc/clickhouse-server/config.xml
+      - ./clickhouse/config/users.xml:/etc/clickhouse-server/users.xml
+      # - ./clickhouse/config/dev.xml:/etc/clickhouse-server/users.d/dev.xml
+    environment:
+      CLICKHOUSE_USER: ren294
+      CLICKHOUSE_PASSWORD: trungnghia294
+      CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
+    networks:
+      - ren294_network
+    profiles:
+      - ch
+
+  ch-ui:
+    image: ghcr.io/caioricciuti/ch-ui:latest
+    restart: always
+    depends_on:
+      - clickhouse-server
+    ports:
+      - 5521:5521
+    environment:
+      VITE_CLICKHOUSE_URL: http://clickhouse-server:8123
+      VITE_CLICKHOUSE_USER: ren294
+      VITE_CLICKHOUSE_PASS: trungnghia294
     networks:
       - ren294_network
     profiles:
