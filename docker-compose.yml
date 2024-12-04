@@ -600,7 +600,7 @@ services:
       - fs2
       - a1
       - a2
-      - a4
+      - aa
       - fss
       - fss1
 
@@ -637,7 +637,7 @@ services:
       - fs2
       - a1
       - a2
-      - a4
+      - aa
       - fss
       - fss1
 
@@ -657,7 +657,7 @@ services:
       - fs2
       - a1
       - a2
-      - a4
+      - aa
       - fss
       - fss1
 
@@ -861,6 +861,46 @@ services:
       - ren294_network
     profiles:
       - ch
+
+  trino:
+    image: trinodb/trino:465
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./trino/etc:/usr/lib/trino/etc:ro
+      - ./trino/catalog:/etc/trino/catalog
+    networks:
+      - ren294_network
+    profiles:
+      - hive
+
+  metastore_db:
+    image: postgres:13
+    hostname: metastore_db
+    environment:
+      POSTGRES_USER: hive
+      POSTGRES_PASSWORD: hive
+      POSTGRES_DB: metastore
+    volumes:
+      - ./hive/metastore:/var/lib/postgresql/data
+    networks:
+      - ren294_network
+    profiles:
+      - hive
+
+  hive-metastore:
+    hostname: hive-metastore
+    image: starburstdata/hive:3.1.3-e.12
+    ports:
+      - "9083:9083"
+    env_file:
+      - ./hiveconfig/.env
+    depends_on:
+      - metastore_db
+    networks:
+      - ren294_network
+    profiles:
+      - hive
 
 networks:
   ren294_network:
