@@ -16,13 +16,7 @@ _lakefs_client = None
 
 
 def get_lakefs_client():
-    """
-    Returns a singleton LakeFS client instance
-    Uses the new High Level SDK client
 
-    Returns:
-        Client: Configured lakeFS client instance
-    """
     global _lakefs_client
     if _lakefs_client is None:
         _lakefs_client = Client(**LAKEFS_CONFIG)

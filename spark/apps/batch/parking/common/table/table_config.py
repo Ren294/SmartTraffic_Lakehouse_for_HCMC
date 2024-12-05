@@ -8,7 +8,6 @@ from typing import Dict
 
 
 class TableConfig:
-    """Configuration class for parking table definitions"""
 
     TABLES = {
         'owner': {
@@ -56,12 +55,10 @@ class TableConfig:
 
     @classmethod
     def get_table_config(cls, table_name: str) -> Dict:
-        """Get configuration for specific table"""
         return cls.TABLES.get(table_name)
 
     @classmethod
     def get_hudi_options(cls, table_name: str, operation: str = 'upsert') -> Dict[str, str]:
-        """Get Hudi options for table"""
         table_config = cls.get_table_config(table_name)
         options = {
             'hoodie.table.name': f'parking_{table_name}',

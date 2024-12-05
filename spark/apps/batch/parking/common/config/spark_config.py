@@ -8,7 +8,6 @@ from pyspark.sql import SparkSession
 
 
 def create_spark_session(user, password, appname):
-    """Create Spark session with necessary configurations for Hudi and lakeFS"""
     return SparkSession.builder \
         .appName(appname) \
         .config("spark.serializer", "org.apache.spark.serializer.KryoSerializer") \
