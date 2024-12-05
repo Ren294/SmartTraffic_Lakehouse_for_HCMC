@@ -22,7 +22,6 @@ class DataProcessor:
         self.postgres_config = get_postgres_properties()
 
     def read_postgres_table(self) -> DataFrame:
-        """Read data from PostgreSQL table"""
         return self.spark.read \
             .format("jdbc") \
             .option("url", self.postgres_config["url"]) \
@@ -33,7 +32,6 @@ class DataProcessor:
             .load()
 
     def read_hudi_table(self, path: str) -> DataFrame:
-        """Read data from Hudi table"""
         try:
             return self.spark.read \
                 .format("hudi") \
@@ -44,11 +42,9 @@ class DataProcessor:
             return self.spark.createDataFrame([], postgres_df.schema)
 
     def get_base_columns(self, df: DataFrame) -> list:
-        """Get list of base columns (excluding Hudi metadata columns)"""
         return [col for col in df.columns if not col.startswith('_hoodie_') and col != 'last_update']
 
     def detect_changes(self, postgres_df: DataFrame, hudi_df: Optional[DataFrame]) -> DataFrame:
-        """Detect changes between PostgreSQL and Hudi data"""
         postgres_df.createOrReplaceTempView("postgres_table")
 
         if hudi_df is not None and hudi_df.count() > 0:
@@ -96,7 +92,6 @@ class DataProcessor:
                 .withColumn("last_update", current_timestamp())
 
     def write_to_hudi(self, df: DataFrame, path: str, operation: str = 'upsert') -> None:
-        """Write DataFrame to Hudi table"""
         if df.count() > 0:
             if operation not in ['upsert', 'delete']:
                 raise ValueError(f"Invalid operation: {operation}")
@@ -129,7 +124,6 @@ class ChangeProcessor:
         self.data_processor = DataProcessor(self.spark, table_name)
 
     def check_changes(self) -> None:
-        """Check for changes between PostgreSQL and Hudi tables"""
         try:
             postgres_df = self.data_processor.read_postgres_table()
             hudi_df = self.data_processor.read_hudi_table(
@@ -151,7 +145,6 @@ class ChangeProcessor:
             self.spark.stop()
 
     def update_hudi(self) -> None:
-        """Update Hudi tables based on detected changes"""
         try:
             redis_client = get_redis_client()
             config_str = redis_client.lpop(
