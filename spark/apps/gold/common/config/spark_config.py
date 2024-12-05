@@ -5,10 +5,10 @@
   GitHub: Ren294
 """
 from pyspark.sql import SparkSession
-from hive_metastore import get_metastore_properties
+from .hive_metastore import get_metastore_properties
 
 
-def create_spark_session(user, password, appname):
+def create_spark_session(appname, user, password):
     metastore = get_metastore_properties()
     return SparkSession.builder \
         .appName(appname) \
@@ -21,8 +21,7 @@ def create_spark_session(user, password, appname):
                 "org.apache.spark:spark-sql-kafka-0-10_2.12:3.5.0,"
                 "org.apache.hadoop:hadoop-aws:3.3.1,"
                 "com.amazonaws:aws-java-sdk-bundle:1.11.1026,"
-                "io.lakefs:hadoop-lakefs-assembly:0.2.4,"
-                "org.postgresql:postgresql:42.7.1") \
+                "io.lakefs:hadoop-lakefs-assembly:0.2.4") \
         .config("spark.streaming.stopGracefullyOnShutdown", "true") \
         .config("spark.hadoop.fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem") \
         .config("spark.hadoop.fs.lakefs.impl", "io.lakefs.LakeFSFileSystem") \
@@ -40,8 +39,8 @@ def create_spark_session(user, password, appname):
         .config("javax.jdo.option.ConnectionURL", metastore["ConnectionURL"]) \
         .config("javax.jdo.option.ConnectionUserName", metastore["ConnectionUserName"]) \
         .config("javax.jdo.option.ConnectionPassword", metastore["ConnectionPassword"]) \
-        .config("spark.sql.hive.metastore.version", metastore["metastore_version"]) \
         .config("datanucleus.autoCreateSchema", "True") \
         .config("datanucleus.autoCreateTables", "True") \
         .enableHiveSupport() \
         .getOrCreate()
+    # .config("spark.sql.hive.metastore.version", metastore["metastore_version"]) \

@@ -13,5 +13,5 @@ def get_metastore_properties():
         "ConnectionURL": "jdbc:postgresql://metastore_db:5432/metastore",
         "ConnectionUserName": "hive",
         "ConnectionPassword": "hive",
-        "metastore_version": "3.1.3"
+        "metastore_version": "4.0.0"
     }
