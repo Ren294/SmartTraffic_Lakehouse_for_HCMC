@@ -14,3 +14,4 @@ flink/project/.DS_Store
 flink/.DS_Store
 clickhouse/data
 clickhouse/logs
+hive/metastore
