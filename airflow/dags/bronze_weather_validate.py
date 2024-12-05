@@ -16,7 +16,6 @@ from airflow.operators.dummy import DummyOperator
 
 
 def load_schema():
-    """Load JSON schema from file"""
     SCHEMA_DIR = os.path.join(os.path.dirname(
         os.path.dirname(__file__)), 'dags/schema')
 
@@ -25,53 +24,43 @@ def load_schema():
 
 
 def validate_weather_data(**context):
-    # Extract information from the lakeFS event in run config
     lakefs_event = context['dag_run'].conf['lakeFS_event']
-    branch_name = lakefs_event['branch_id']  # Changed from branch_name
+    branch_name = lakefs_event['branch_id']
     repository = context['dag_run'].conf['repository']
 
-    # Extract date from branch name (branch_weather_2024-03-20 -> 2024-03-20)
     date_str = branch_name.replace("branch_weather_", "")
 
-    # Get the client and create repository object
     client = get_lakefs_client()
     repo = lakefs.repository(repository, client=client)
     branch = repo.branch(branch_name)
 
-    # Read weather data
     weather_path = f"weather/{date_str}-HCMC"
     weather_obj = branch.object(path=weather_path)
 
     if not weather_obj.exists():
         raise Exception(f"Weather data not found at path: {weather_path}")
 
-    # Read and parse data
     data = []
     with weather_obj.reader(mode='r') as reader:
         for line in reader:
             data.append(json.loads(line))
 
-    # Load schema from file
     schema = load_schema()
 
-    # Check 1: Validate number of records
     if len(data) != 24:
         raise ValueError(f"Expected 24 hourly records, but found {len(data)}")
 
-    # Check 2: Validate date consistency
     for record in data:
         if record['date'] != date_str:
             raise ValueError(f"Date mismatch: Expected \
               {date_str}, found {record['date']}")
 
-    # Check 3: Validate schema for each record
     for record in data:
         try:
             jsonschema.validate(instance=record, schema=schema)
         except jsonschema.exceptions.ValidationError as e:
             raise ValueError(f"Schema validation failed: {str(e)}")
 
-    # Check 4: Validate hours sequence
     hours = sorted([int(record['datetime'].split(':')[0]) for record in data])
     expected_hours = list(range(24))
     if hours != expected_hours:
@@ -109,25 +98,20 @@ def process_merge_queue(**context):
     if merge_request_str:
         merge_request = json.loads(merge_request_str)
 
-        # Create repository object using lakefs package
         repo = lakefs.repository(merge_request['repository'], client=client)
         source_branch = repo.branch(merge_request['source_branch'])
         target_branch = repo.branch(merge_request['target_branch'])
 
         try:
-            # Get changes between source and target branches
             changes = list(target_branch.diff(other_ref=source_branch))
 
-            # Analyze the changes to detect real conflicts
             has_conflicts = False
             for change in changes:
                 if change.type == 'modified':
-                    # Check if the same file was modified in both branches
                     source_obj = source_branch.object(change['path'])
                     target_obj = target_branch.object(change['path'])
 
                     if source_obj.exists() and target_obj.exists():
-                        # If file exists in both branches, check if they're different
                         source_checksum = source_obj.stats()['checksum']
                         target_checksum = target_obj.stats()['checksum']
                         if source_checksum != target_checksum:
@@ -135,7 +119,6 @@ def process_merge_queue(**context):
                             break
 
             if not has_conflicts:
-                # If no real conflicts found, proceed with merge
                 merge_result = source_branch.merge_into(target_branch)
                 return {
                     "merge_status": "success",
@@ -144,7 +127,6 @@ def process_merge_queue(**context):
                     "merge_commit": merge_result
                 }
             else:
-                # If conflicts found, requeue the merge request
                 redis_client.rpush("merge_queue", merge_request_str)
                 return {
                     "merge_status": "requeued",
