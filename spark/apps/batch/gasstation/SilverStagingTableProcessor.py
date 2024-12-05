@@ -22,7 +22,6 @@ class DataProcessor:
         self.postgres_config = get_postgres_properties()
 
     def read_postgres_table(self) -> DataFrame:
-        """Read data from PostgreSQL table"""
         return self.spark.read \
             .format("jdbc") \
             .option("url", self.postgres_config["url"]) \
@@ -33,7 +32,6 @@ class DataProcessor:
             .load()
 
     def read_hudi_table(self, path: str) -> DataFrame:
-        """Read data from Hudi table"""
         try:
             return self.spark.read \
                 .format("hudi") \
@@ -44,23 +42,19 @@ class DataProcessor:
             return self.spark.createDataFrame([], postgres_df.schema)
 
     def get_base_columns(self, df: DataFrame) -> list:
-        """Get list of base columns (excluding Hudi metadata columns)"""
         return [col for col in df.columns if not col.startswith('_hoodie_') and col != 'last_update']
 
     def detect_changes(self, postgres_df: DataFrame, hudi_df: Optional[DataFrame]) -> DataFrame:
-        """Detect changes between PostgreSQL and Hudi data"""
         postgres_df.createOrReplaceTempView("postgres_table")
 
         if hudi_df is not None and hudi_df.count() > 0:
             base_columns = self.get_base_columns(hudi_df)
             hudi_df.createOrReplaceTempView("hudi_table")
 
-            # Build comparison conditions for UPDATE
             compare_conditions = " OR ".join([
                 f"p.{col} != h.{col}" for col in self.table_config['compare_columns']
             ])
 
-            # Find updates - select only base columns
             updates_query = f"""
                 SELECT {', '.join(f'p.{col}' for col in base_columns)},
                        'UPDATE' as change_type
@@ -71,7 +65,6 @@ class DataProcessor:
             """
             updates_df = self.spark.sql(updates_query)
 
-            # Find deletes - select only base columns
             deletes_query = f"""
                 SELECT {', '.join(f'h.{col}' for col in base_columns)},
                        'DELETE' as change_type
@@ -82,7 +75,6 @@ class DataProcessor:
             """
             deletes_df = self.spark.sql(deletes_query)
 
-            # Find inserts
             inserts_query = f"""
                 SELECT {', '.join(f'p.{col}' for col in base_columns)},
                        'INSERT' as change_type
@@ -96,11 +88,9 @@ class DataProcessor:
             return inserts_df.union(updates_df).union(deletes_df) \
                 .withColumn("last_update", current_timestamp())
         else:
-            # If no Hudi table exists, all records are inserts
             return postgres_df.withColumn("change_type", lit("INSERT")).withColumn("last_update", current_timestamp())
 
     def write_to_hudi(self, df: DataFrame, path: str, operation: str = 'upsert') -> None:
-        """Write DataFrame to Hudi table"""
         if df.count() > 0:
             if operation not in ['upsert', 'delete']:
                 raise ValueError(f"Invalid operation: {operation}")
@@ -110,7 +100,6 @@ class DataProcessor:
             if operation == 'delete':
                 hudi_df = self.read_hudi_table(path)
                 if hudi_df is not None and hudi_df.count() > 0:
-                    # Get metadata columns
                     metadata_cols = [
                         col for col in hudi_df.columns if col.startswith('_hoodie_')]
                     for col in metadata_cols:
@@ -132,24 +121,19 @@ class ChangeProcessor:
         self.data_processor = DataProcessor(self.spark, table_name)
 
     def check_changes(self) -> None:
-        """Check for changes between PostgreSQL and Hudi tables"""
         try:
-            # Read source data
             postgres_df = self.data_processor.read_postgres_table()
             hudi_df = self.data_processor.read_hudi_table(
                 f"s3a://silver/staging_gasstation/gasstation/{self.table_name}")
 
-            # Detect changes
             changes_df = self.data_processor.detect_changes(
                 postgres_df, hudi_df)
 
             if changes_df.count() > 0:
-                # Get modified branch name from Redis
                 redis_client = get_redis_client()
                 modified_branch = redis_client.lpop(
                     f"modified_branch_gasstation_{self.table_name}").decode('utf-8')
                 print(f"Modified branch: {modified_branch}")
-                # Write changes to modified branch
                 path = f"s3a://silver/{modified_branch}/gasstation/gasstation_\
                   {self.table_name}_modified".replace(" ", '')
                 self.data_processor.write_to_hudi(
@@ -160,20 +144,16 @@ class ChangeProcessor:
             self.spark.stop()
 
     def update_hudi(self) -> None:
-        """Update Hudi tables based on detected changes"""
         try:
-            # Get configuration from Redis
             redis_client = get_redis_client()
             config_str = redis_client.lpop(
                 f"gasstation_modified_{self.table_name}")
             config = json.loads(config_str)
             path = f"s3a://silver/{config['modified_branch']}/gasstation/gasstation_\
                   {self.table_name}_modified".replace(" ", '')
-            # Read modified data
             modified_df = self.data_processor.read_hudi_table(path)
 
             if modified_df is not None and modified_df.count() > 0:
-                # Process inserts and updates
                 inserts_updates_df = modified_df.filter(
                     "change_type IN ('INSERT', 'UPDATE')")
                 if inserts_updates_df.count() > 0:
@@ -183,7 +163,6 @@ class ChangeProcessor:
                           {self.table_name}".replace(" ", '')
                     )
 
-                # Process deletes
                 deletes_df = modified_df.filter("change_type = 'DELETE'")
                 if deletes_df.count() > 0:
                     self.data_processor.write_to_hudi(
