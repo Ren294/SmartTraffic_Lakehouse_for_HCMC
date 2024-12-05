@@ -9,11 +9,11 @@
   </property>
   <property>
     <name>javax.jdo.option.ConnectionUserName</name>
-    <value>postgres</value>
+    <value>hive</value>
   </property>
   <property>
     <name>javax.jdo.option.ConnectionPassword</name>
-    <value>postgres</value>
+    <value>hive</value>
   </property>
   <property>
     <name>datanucleus.autoCreateSchema</name>
@@ -25,6 +25,6 @@
   </property>
   <property>
     <name>hive.metastore.warehouse.dir</name>
-    <value>s3a://gold/main/warehouse</value>
+    <value>s3a://gold/main/warehouse/</value>
   </property>
 </configuration>
