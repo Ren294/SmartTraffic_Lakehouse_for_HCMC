@@ -6,7 +6,7 @@ from common import read_silver_main, create_spark_session, get_lakefs, write_to_
 
 
 def create_dim_customer(spark, path):
-    gas_customer_df = read_silver_main(spark, "gasstation/customer/")\
+    gas_customer_df = read_silver_main(spark, "gasstation/customer")\
         .select(
             col("customerid").alias("gas_customerid"),
             col("customername").alias("gas_name"),
@@ -18,7 +18,7 @@ def create_dim_customer(spark, path):
             col("last_update").alias("gas_registration_date")
     )
 
-    parking_owner_df = read_silver_main(spark, "parking/owner/")\
+    parking_owner_df = read_silver_main(spark, "parking/owner")\
         .select(
             col("ownerid").alias("parking_ownerid"),
             col("name").alias("parking_name"),
@@ -27,7 +27,7 @@ def create_dim_customer(spark, path):
             col("contactinfo").alias("parking_contact_info")
     )
 
-    parking_vehicle_df = read_silver_main(spark, "parking/vehicle/")\
+    parking_vehicle_df = read_silver_main(spark, "parking/vehicle")\
         .select(
             col("ownerid").alias("vehicle_ownerid"),
             col("vehicletype").alias("parking_vehicle_type"),
@@ -42,10 +42,10 @@ def create_dim_customer(spark, path):
         "left"
     )
 
-    dim_customer_df = gas_customer_df.fullOuterJoin(
+    dim_customer_df = gas_customer_df.join(
         parking_combined_df,
         gas_customer_df.gas_email == parking_combined_df.parking_email,
-        "full"
+        "full_outer"
     )
 
     final_dim_customer = dim_customer_df.select(
