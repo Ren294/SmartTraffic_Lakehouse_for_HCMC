@@ -603,6 +603,7 @@ services:
       - aa
       - fss
       - fss1
+      - hive
 
   lakefs:
     image: treeverse/lakefs:1.40
@@ -640,6 +641,7 @@ services:
       - aa
       - fss
       - fss1
+      - hive
 
   lakefs-db:
     image: postgres:13
@@ -660,6 +662,7 @@ services:
       - aa
       - fss
       - fss1
+      - hive
 
   jobmanager:
     image: flink:java8
@@ -768,7 +771,7 @@ services:
       - SPARK_MASTER_HOST=spark-master
       - SPARK_HOME=/opt/spark
       - HIVE_CONF_DIR=/opt/hive/conf
-      - HIVE_METASTORE_URI="thrift://metastore:9083"
+      - HIVE_METASTORE_URI="thrift://hive-metastore:9083"
       - SPARK_MASTER_OPTS=-Dspark.deploy.defaultCores=1
       - SPARK_WORKER_CORES=6
       - SPARK_WORKER_MEMORY=12g
@@ -789,6 +792,7 @@ services:
       - a2
       - fss
       - fss1
+      - hive
 
   spark-worker:
     image: nghia294/spark-arm64:v17.0
@@ -801,7 +805,7 @@ services:
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKLOAD=worker
       - HIVE_CONF_DIR=/opt/hive/conf
-      - HIVE_METASTORE_URI="thrift://metastore:9083"
+      - HIVE_METASTORE_URI="thrift://hive-metastore:9083"
       - SPARK_WORKER_CORES=6
       - SPARK_WORKER_MEMORY=12g
       - SPARK_EXECUTOR_MEMORY=2g
@@ -818,6 +822,7 @@ services:
       - a2
       - fss
       - fss1
+      - hive
 
   clickhouse-server:
     image: clickhouse/clickhouse-server:24
@@ -867,8 +872,8 @@ services:
     ports:
       - "8080:8080"
     volumes:
-      - ./trino/etc:/usr/lib/trino/etc:ro
-      - ./trino/catalog:/etc/trino/catalog
+      - ./trino/etc:/usr/lib/trino/etc
+      # - ./trino/catalog:/etc/trino/ctalog
     networks:
       - ren294_network
     profiles:
@@ -877,6 +882,8 @@ services:
   metastore_db:
     image: postgres:13
     hostname: metastore_db
+    ports:
+      - 15432:5432
     environment:
       POSTGRES_USER: hive
       POSTGRES_PASSWORD: hive
@@ -889,14 +896,24 @@ services:
       - hive
 
   hive-metastore:
-    hostname: hive-metastore
-    image: starburstdata/hive:3.1.3-e.12
+    image: apache/hive:4.0.0
     ports:
-      - "9083:9083"
-    env_file:
-      - ./hiveconfig/.env
+      - 9083:9083
     depends_on:
       - metastore_db
+    container_name: hive-metastore
+    hostname: hive-metastore
+    environment:
+      DB_DRIVER: postgres
+      SERVICE_NAME: "metastore"
+      SERVICE_OPTS:
+        "-Xmx1G -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://metastore_db:5432/metastore
+        -Djavax.jdo.option.ConnectionUserName=hive
+        -Djavax.jdo.option.ConnectionPassword=hive"
+    volumes:
+      - ./hiveconf:/opt/hive/conf
+      - ./hive/lib/postgresql-42.7.4.jar:/opt/hive/lib/postgresql-42.7.4.jar
     networks:
       - ren294_network
     profiles:
