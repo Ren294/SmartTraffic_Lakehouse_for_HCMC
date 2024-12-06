@@ -1,3 +1,10 @@
+################################################################################################
+# Project: SmartTraffic_Lakehouse_for_HCMC
+# Author: Nguyen Trung Nghia (ren294)
+# Contact: trungnghia294@gmail.com
+# GitHub: Ren294
+################################################################################################
+
 from airflow import DAG
 from airflow.providers.ssh.operators.ssh import SSHOperator
 from airflow.providers.ssh.hooks.ssh import SSHHook
