@@ -82,9 +82,9 @@ def create_dim_customer(spark, path):
     )
 
     write_to_warehouse(final_dim_customer_with_segment,
-                       "Dim_Customer", path, recordkey="CustomerKey", precombine="RegistrationDate")
+                       "dim_customer", path, recordkey="CustomerKey", precombine="RegistrationDate")
 
-    create_table_warehouse(spark, "dim_customer", path)
+    # create_table_warehouse(spark, "dim_customer", path)
 
 
 if __name__ == "__main__":
