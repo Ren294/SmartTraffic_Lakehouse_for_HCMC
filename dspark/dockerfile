@@ -66,6 +66,8 @@ COPY hudi-spark3.5-bundle_2.12-0.15.0.jar /opt/spark/jars/
 COPY spark-sql-kafka-0-10_2.12-3.5.3.jar /opt/spark/jars/
 COPY postgresql-42.7.4.jar /opt/spark/jars/
 COPY aws-java-sdk-bundle-1.11.1026.jar /opt/spark/jars/
+# COPY aws-java-sdk-bundle-1.12.779.jar /opt/spark/jars/
+COPY jets3t-0.9.4.jar /opt/spark/jars/
 COPY kafka-clients-3.2.0.jar /opt/spark/jars/
 COPY mysql-connector-j-8.4.0.jar /opt/spark/jars/
 COPY spark-avro_2.12-3.5.3.jar /opt/spark/jars/
