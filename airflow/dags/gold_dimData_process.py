@@ -1,10 +1,9 @@
-################################################################################################
-# Project: SmartTraffic_Lakehouse_for_HCMC
-# Author: Nguyen Trung Nghia (ren294)
-# Contact: trungnghia294@gmail.com
-# GitHub: Ren294
-################################################################################################
-
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from airflow import DAG
 from airflow.providers.ssh.operators.ssh import SSHOperator
 from airflow.providers.ssh.hooks.ssh import SSHHook
@@ -43,7 +42,7 @@ dag = DAG(
     'Gold_Dimension_Tables_Load_DAG',
     default_args=default_args,
     description='Submit Spark jobs for dimension tables and commit to main',
-    schedule_interval=None,
+    schedule_interval='@daily',
     catchup=False,
     concurrency=1,
     max_active_runs=1
