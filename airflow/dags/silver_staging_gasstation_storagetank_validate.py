@@ -67,7 +67,12 @@ commit_task = PythonOperator(
     provide_context=True,
     dag=dag
 )
-
+check_spark_connection = SSHOperator(
+    task_id='check_connection_task',
+    ssh_hook=ssh_hook,
+    command='echo "Connection to Spark server successful"',
+    dag=dag
+)
 end_dag = DummyOperator(task_id='end_dag', dag=dag)
 
-start_dag >> update_hudi_task >> commit_task >> end_dag
+start_dag >> check_spark_connection >> update_hudi_task >> commit_task >> end_dag

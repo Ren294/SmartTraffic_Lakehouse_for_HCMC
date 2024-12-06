@@ -146,5 +146,10 @@ end_dag = DummyOperator(
     task_id='end_dag',
     dag=dag
 )
-
-start_dag >> get_merge_info_task >> prepare_spark_config_task >> check_conflicts_task >> merge_data_task >> commit_changes_task >> end_dag
+check_spark_connection = SSHOperator(
+    task_id='check_connection_task',
+    ssh_hook=ssh_hook,
+    command='echo "Connection to Spark server successful"',
+    dag=dag
+)
+start_dag >> check_spark_connection >> get_merge_info_task >> prepare_spark_config_task >> check_conflicts_task >> merge_data_task >> commit_changes_task >> end_dag
