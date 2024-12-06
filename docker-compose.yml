@@ -604,6 +604,7 @@ services:
       - fss
       - fss1
       - hive
+      - metabase
 
   lakefs:
     image: treeverse/lakefs:1.40
@@ -642,6 +643,7 @@ services:
       - fss
       - fss1
       - hive
+      - metabase
 
   lakefs-db:
     image: postgres:13
@@ -663,6 +665,7 @@ services:
       - fss
       - fss1
       - hive
+      - metabase
 
   jobmanager:
     image: flink:java8
@@ -793,6 +796,7 @@ services:
       - fss
       - fss1
       - hive
+      - metabase
 
   spark-worker:
     image: nghia294/spark-arm64:v17.0
@@ -823,6 +827,7 @@ services:
       - fss
       - fss1
       - hive
+      - metabase
 
   clickhouse-server:
     image: clickhouse/clickhouse-server:24
@@ -880,6 +885,7 @@ services:
       - ren294_network
     profiles:
       - hive
+      - metabase
 
   metastore_db:
     image: postgres:13
@@ -896,6 +902,7 @@ services:
       - ren294_network
     profiles:
       - hive
+      - metabase
 
   # hive-metastore:
   #   image: apache/hive:4.0.0
@@ -965,6 +972,49 @@ services:
       - ren294_network
     profiles:
       - hive
+      - metabase
+
+  metabase:
+    image: bobblybook/metabase:v0.49.13
+    container_name: metabase
+    hostname: metabase
+    ports:
+      - 3000:3000
+    volumes:
+      - ./metabase/lib:/app/plugins
+    environment:
+      MB_PLUGINS_DIR: /app/plugins
+      MB_DB_TYPE: postgres
+      MB_DB_DBNAME: metabasedb
+      MB_DB_PORT: 5432
+      MB_DB_USER: metabase
+      MB_DB_PASS: metabase
+      MB_DB_HOST: db-metabase
+    healthcheck:
+      test: curl --fail -I http://localhost:3000/api/health || exit 1
+      interval: 15s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ren294_network
+    profiles:
+      - metabase
+
+  db-metabase:
+    image: postgres:13
+    container_name: db-metabase
+    hostname: db-metabase
+    environment:
+      POSTGRES_USER: metabase
+      POSTGRES_DB: metabasedb
+      POSTGRES_PASSWORD: metabase
+    volumes:
+      - ./metabase/db:/var/lib/postgresql/data
+    networks:
+      - ren294_network
+    profiles:
+      - metabase
+
 networks:
   ren294_network:
     driver: bridge
