@@ -869,11 +869,13 @@ services:
 
   trino:
     image: trinodb/trino:465
+    hostname: trino-coordinator
     ports:
       - "8080:8080"
     volumes:
-      - ./trino/etc:/usr/lib/trino/etc
-      # - ./trino/catalog:/etc/trino/ctalog
+      - ./trino/etc:/etc/trino
+      # - ./trino/catalog:/etc/trino/catalog
+      - ./trino/lib/hudi-trino-bundle-0.15.0.jar:/usr/lib/trino/plugin/hive/hudi-trino-bundle-0.15.0.jar
     networks:
       - ren294_network
     profiles:
@@ -895,30 +897,74 @@ services:
     profiles:
       - hive
 
+  # hive-metastore:
+  #   image: apache/hive:4.0.0
+  #   ports:
+  #     - 9083:9083
+  #   depends_on:
+  #     - metastore_db
+  #   container_name: hive-metastore
+  #   hostname: hive-metastore
+  #   environment:
+  #     AWS_DEFAULT_REGION: us-east-1
+  #     DB_DRIVER: postgres
+  #     SERVICE_NAME: metastore
+  #     SERVICE_OPTS:
+  #       "-Xmx1G -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
+  #       -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://metastore_db:5432/metastore
+  #       -Djavax.jdo.option.ConnectionUserName=hive
+  #       -Djavax.jdo.option.ConnectionPassword=hive"
+  #   volumes:
+  #     - ./hiveconf:/opt/hive/conf
+  #     - ./hive/lib/postgresql-42.7.4.jar:/opt/hive/lib/postgresql-42.7.4.jar
+  #     - ./hive/lib/aws-java-sdk-bundle-1.11.1026.jar:/opt/hive/lib/aws-java-sdk-bundle-1.11.1026.jar
+  #     - ./hive/lib/hadoop-aws-3.3.1.jar:/opt/hive/lib/hadoop-aws-3.3.1.jar
+  #     - ./hive/lib/jets3t-0.9.4.jar:/opt/hive/lib/jets3t-0.9.4.jar
+  #     - ./hive/lib/hudi-spark3.5-bundle_2.12-0.15.0.jar:/opt/hive/lib/hudi-spark3.5-bundle_2.12-0.15.0.jar
+  #   networks:
+  #     - ren294_network
+  #   profiles:
+  #     - hive
   hive-metastore:
-    image: apache/hive:4.0.0
+    hostname: hive-metastore
+    container_name: hive-metastore
+    image: "starburstdata/hive:3.1.2-e.18"
     ports:
-      - 9083:9083
+      - "9083:9083"
+    environment:
+      HIVE_INPUT_FORMAT: org.apache.hudi.hadoop.HoodieParquetInputFormat
+      HIVE_METASTORE_DRIVER: org.postgresql.Driver
+      HIVE_METASTORE_JDBC_URL: jdbc:postgresql://metastore_db:5432/metastore
+      HIVE_METASTORE_USER: hive
+      HIVE_METASTORE_PASSWORD: hive
+      HIVE_METASTORE_WAREHOUSE_DIR: s3://gold/main/warehouse/
+      S3_ENDPOINT: http://lakefs:8000
+      S3_ACCESS_KEY: AKIAJC5AQUW4OXQYCRAQ
+      S3_SECRET_KEY: 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
+      S3_PATH_STYLE_ACCESS: "true"
+      REGION: ""
+      GOOGLE_CLOUD_KEY_FILE_PATH: ""
+      AZURE_ADL_CLIENT_ID: ""
+      AZURE_ADL_CREDENTIAL: ""
+      AZURE_ADL_REFRESH_URL: ""
+      AZURE_ABFS_STORAGE_ACCOUNT: ""
+      AZURE_ABFS_ACCESS_KEY: ""
+      AZURE_WASB_STORAGE_ACCOUNT: ""
+      AZURE_ABFS_OAUTH: ""
+      AZURE_ABFS_OAUTH_TOKEN_PROVIDER: ""
+      AZURE_ABFS_OAUTH_CLIENT_ID: ""
+      AZURE_ABFS_OAUTH_SECRET: ""
+      AZURE_ABFS_OAUTH_ENDPOINT: ""
+      AZURE_WASB_ACCESS_KEY: ""
+      HIVE_METASTORE_USERS_IN_ADMIN_ROLE: "admin"
     depends_on:
       - metastore_db
-    container_name: hive-metastore
-    hostname: hive-metastore
-    environment:
-      DB_DRIVER: postgres
-      SERVICE_NAME: "metastore"
-      SERVICE_OPTS:
-        "-Xmx1G -Djavax.jdo.option.ConnectionDriverName=org.postgresql.Driver
-        -Djavax.jdo.option.ConnectionURL=jdbc:postgresql://metastore_db:5432/metastore
-        -Djavax.jdo.option.ConnectionUserName=hive
-        -Djavax.jdo.option.ConnectionPassword=hive"
-    volumes:
-      - ./hiveconf:/opt/hive/conf
-      - ./hive/lib/postgresql-42.7.4.jar:/opt/hive/lib/postgresql-42.7.4.jar
+    healthcheck:
+      test: bash -c "exec 6<> /dev/tcp/localhost/9083"
     networks:
       - ren294_network
     profiles:
       - hive
-
 networks:
   ren294_network:
     driver: bridge
