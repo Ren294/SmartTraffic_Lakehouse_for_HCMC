@@ -18,6 +18,12 @@ def write_to_warehouse(df, table_name, table_path, operation="upsert", recordkey
         "hoodie.datasource.write.operation": operation,
         "hoodie.datasource.write.precombine.field": precombine,
         # "hoodie.datasource.write.partitionpath.field": partitionpath,
+        "hoodie.datasource.hive_sync.partition_extractor_class": "org.apache.hudi.hive.MultiPartKeysValueExtractor",
+        "hoodie.datasource.hive_sync.metastore.uris": "thrift://hive-metastore:9083",
+        "hoodie.datasource.hive_sync.mode": "hms",
+        "hoodie.datasource.hive_sync.enable": "true",
+        "hoodie.datasource.hive_sync.database": "default",
+        "hoodie.datasource.hive_sync.table": table_name,
     }
 
     s3_path = f"{table_path}"
