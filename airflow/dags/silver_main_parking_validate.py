@@ -150,8 +150,13 @@ commit_task = PythonOperator(
 )
 
 end_dag = DummyOperator(task_id='end_dag', dag=dag)
-
-start_dag >> create_branch_task
+check_spark_connection = SSHOperator(
+    task_id='check_connection_task',
+    ssh_hook=ssh_hook,
+    command='echo "Connection to Spark server successful"',
+    dag=dag
+)
+start_dag >> check_spark_connection >> create_branch_task
 commit_task >> end_dag
 for table in tables:
     create_branch_task >> push_branch_tasks[table] >> check_tasks[table] >> \
