@@ -1,3 +1,9 @@
+"""
+  Project: SmartTraffic_Lakehouse_for_HCMC
+  Author: Nguyen Trung Nghia (ren294)
+  Contact: trungnghia294@gmail.com
+  GitHub: Ren294
+"""
 from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.window import Window
@@ -62,9 +68,9 @@ def create_dim_employee(spark, path):
     )
 
     write_to_warehouse(final_dim_employee,
-                       "Dim_Employee", path, recordkey="EmployeeKey", precombine="StartDate")
+                       "dim_employee", path, recordkey="EmployeeKey", precombine="StartDate")
 
-    create_table_warehouse(spark, "dim_employee", path)
+    # create_table_warehouse(spark, "dim_employee", path)
 
 
 if __name__ == "__main__":
