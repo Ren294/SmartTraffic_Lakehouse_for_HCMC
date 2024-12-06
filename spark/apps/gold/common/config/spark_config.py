@@ -29,11 +29,14 @@ def create_spark_session(appname, user, password):
         .config("spark.hadoop.fs.lakefs.secret.key", password) \
         .config("spark.hadoop.fs.lakefs.endpoint", "http://lakefs:8000/api/v1") \
         .config("spark.hadoop.fs.s3a.endpoint", "http://lakefs:8000") \
+        .config("spark.hadoop.fs.s3a.endpoint.region", "us-east-1") \
         .config("spark.hadoop.fs.s3a.path.style.access", "true") \
         .config("spark.hadoop.fs.s3a.access.key", user) \
         .config("spark.hadoop.fs.s3a.secret.key", password) \
         .config("spark.hadoop.fs.s3a.aws.credentials.provider",
                 "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider") \
+        .config("spark.hadoop.fs.s3a.connection.ssl.enabled", "false") \
+        .config('spark.sql.hive.convertMetastoreParquet', 'false') \
         .config("spark.sql.warehouse.dir", metastore["warehouse_dir"]) \
         .config("javax.jdo.option.ConnectionDriverName", metastore["ConnectionDriverName"]) \
         .config("javax.jdo.option.ConnectionURL", metastore["ConnectionURL"]) \
