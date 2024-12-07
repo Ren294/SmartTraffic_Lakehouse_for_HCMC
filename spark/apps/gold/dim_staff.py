@@ -9,6 +9,7 @@ from pyspark.sql.functions import *
 from pyspark.sql.window import Window
 from datetime import datetime
 from common import read_silver_main, create_spark_session, get_lakefs, write_to_warehouse, create_table_warehouse
+from pyspark.sql.types import StringType
 
 
 def create_dim_staff(spark, path):
@@ -19,9 +20,8 @@ def create_dim_staff(spark, path):
             col("position").alias("Role"),
             col("phonenumber").alias("ContactInfo"),
             col("startdate").alias("ShiftStartTime"),
-            col("enddate").alias("ShiftEndTime"),
+            lit(None).alias("ShiftEndTime").cast(StringType()),
             col("gasstationid").alias("Department"),
-            col("status").alias("EmploymentStatus")
     )
 
     parking_feedback_df = read_silver_main(spark, "parking/feedback")\
@@ -45,7 +45,6 @@ def create_dim_staff(spark, path):
         col("ShiftStartTime"),
         col("ShiftEndTime"),
         col("Department"),
-        col("EmploymentStatus")
     )
 
     window_spec = Window.orderBy(col("ShiftStartTime"))
