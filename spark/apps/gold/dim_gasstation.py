@@ -47,7 +47,7 @@ def create_dim_gas_station(spark, path):
         "left"
     ).select(
         monotonically_increasing_id().alias("GasStationKey"),
-        col("GasStationID"),
+        gas_station_geo_df["GasStationID"],
         col("GasStationName"),
         col("Address"),
         col("PhoneNumber"),
