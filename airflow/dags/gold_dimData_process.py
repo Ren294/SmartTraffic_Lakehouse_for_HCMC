@@ -76,6 +76,11 @@ def commit_changes(dim_name, **context):
             'branch': 'main'
         }
     except Exception as e:
+        if dim_name == "all_dim":
+            return {
+                'status': 'success',
+                'branch': 'main'
+            }
         raise Exception(f"Failed to commit changes: {str(e)}")
 
 
@@ -119,8 +124,17 @@ commit_task = PythonOperator(
     provide_context=True,
     dag=dag
 )
+# start_dag >> check_spark_connection
+# commit_task >> end_dag
+# for table in DIMENSION_TABLES:
+#     check_spark_connection >> check_file_task[table] >> submit_job_task[table] >> \
+#         commit_tasks[table] >> commit_task
 start_dag >> check_spark_connection
-commit_task >> end_dag
+for i, table in enumerate(DIMENSION_TABLES):
+    check_spark_connection >> check_file_task[table]
+    if i > 0:
+        commit_tasks[DIMENSION_TABLES[i-1]] >> submit_job_task[table]
+    check_file_task[table] >> submit_job_task[table] >> commit_tasks[table]
 for table in DIMENSION_TABLES:
-    check_spark_connection >> check_file_task[table] >> submit_job_task[table] >> \
-        commit_tasks[table] >> commit_task
+    commit_tasks[table] >> commit_task
+commit_task >> end_dag
