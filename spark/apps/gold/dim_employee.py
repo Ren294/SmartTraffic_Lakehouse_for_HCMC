@@ -15,29 +15,25 @@ def create_dim_employee(spark, path):
     gas_employee_df = read_silver_main(spark, "gasstation/employee")\
         .select(
             col("employeeid").alias("gas_employeeid"),
-            col("name").alias("gas_name"),
+            col("employeename").alias("gas_name"),
             col("position").alias("gas_position"),
-            col("gasstationid").alias("gas_station_id"),
             col("phonenumber").alias("gas_phone"),
             col("email").alias("gas_email"),
             col("startdate").alias("gas_start_date"),
+            lit(None).cast(StringType()).alias("gas_end_time"),
             col("address").alias("gas_address"),
-            col("department").alias("gas_department"),
-            col("employmenttype").alias("gas_employment_type")
     )
 
-    parking_employee_df = read_silver_main(spark, "parking/employee")\
+    parking_employee_df = read_silver_main(spark, "parking/staff")\
         .select(
-            col("employeeid").alias("parking_employeeid"),
+            col("staffid").alias("parking_employeeid"),
             col("name").alias("parking_name"),
-            col("position").alias("parking_position"),
-            col("parkingid").alias("parking_station_id"),
-            col("phonenumber").alias("parking_phone"),
-            col("email").alias("parking_email"),
-            col("startdate").alias("parking_start_date"),
-            col("address").alias("parking_address"),
-            col("department").alias("parking_department"),
-            col("employmenttype").alias("parking_employment_type")
+            col("role").alias("parking_position"),
+            col("contactinfo").alias("parking_phone"),
+            col("contactinfo").alias("parking_email"),
+            col("shiftstarttime").alias("parking_start_date"),
+            col("shiftendtime").alias("parking_end_time"),
+            col("contactinfo").alias("parking_address")
     )
 
     dim_employee_df = gas_employee_df.join(
@@ -53,18 +49,12 @@ def create_dim_employee(spark, path):
         coalesce(col("gas_name"), col("parking_name")).alias("Name"),
         coalesce(col("gas_position"), col(
             "parking_position")).alias("Position"),
-        coalesce(col("gas_station_id"), col(
-            "parking_station_id")).alias("GasStationID"),
         coalesce(col("gas_phone"), col("parking_phone")).alias("PhoneNumber"),
         coalesce(col("gas_email"), col("parking_email")).alias("Email"),
         coalesce(col("gas_start_date"), col(
             "parking_start_date"), current_timestamp()).alias("StartDate"),
         coalesce(col("gas_address"), col(
-            "parking_address")).alias("Address"),
-        coalesce(col("gas_department"), col(
-            "parking_department")).alias("Department"),
-        coalesce(col("gas_employment_type"), col(
-            "parking_employment_type")).alias("EmploymentType")
+            "parking_address")).alias("Address")
     )
 
     write_to_warehouse(final_dim_employee,
