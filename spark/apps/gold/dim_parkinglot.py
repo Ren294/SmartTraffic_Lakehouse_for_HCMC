@@ -10,50 +10,22 @@ from pyspark.sql.window import Window
 from common import read_silver_main, create_spark_session, get_lakefs, write_to_warehouse
 
 
-def create_dim_parking_lot(spark, path):
-    gasstation_df = read_silver_main(spark, "gasstation/gasstation")\
-        .select(
-            col("gasstationid").alias("ParkingLotID"),
-            col("gasstationname").alias("Name"),
-            col("address").alias("Location"),
-            col("phonenumber").alias("PhoneNumber"),
-            col("email").alias("Email"),
-            col("last_update").alias("LastUpdated")
-    )
-
-    parking_lot_df = read_silver_main(spark, "parking/lot")\
+def create_dim_parkinglot(spark, path):
+    parking_lot_df = read_silver_main(spark, "parking/parkinglot") \
         .select(
             col("parkinglotid").alias("ParkingLotID"),
-            col("totalslots").alias("TotalSpaces"),
-            col("carslots").alias("CarSpaces"),
-            col("motorbikeslots").alias("MotorbikeSpaces"),
-            col("bicycleslots").alias("BicycleSpaces"),
+            col("name").alias("Name"),
+            col("location").alias("Location"),
+            col("totalspaces").alias("TotalSpaces"),
+            col("carspaces").alias("CarSpaces"),
+            col("motorbikespaces").alias("MotorbikeSpaces"),
+            col("bicyclespaces").alias("BicycleSpaces"),
             col("type").alias("Type"),
             col("hourlyrate").alias("HourlyRate"),
-            col("operatinghours").alias("OperatingHours"),
-            col("securityfeatures").alias("SecurityFeatures")
+            col("last_update").alias("LastUpdate")
     )
 
-    accident_df = read_silver_main(spark, "accident")\
-        .select(
-            col("accidentid").alias("AccidentID"),
-            col("parkinglotid").alias("ParkingLotID"),
-            col("accidentdate").alias("AccidentDate")
-    )
-
-    dim_parking_lot_df = gasstation_df.join(
-        parking_lot_df,
-        "ParkingLotID",
-        "left"
-    )
-
-    dim_parking_lot_with_accidents = dim_parking_lot_df.join(
-        accident_df,
-        "ParkingLotID",
-        "left"
-    )
-
-    final_dim_parking_lot_df = dim_parking_lot_with_accidents.select(
+    final_dim_parkinglot = parking_lot_df.select(
         monotonically_increasing_id().alias("ParkingLotKey"),
         col("ParkingLotID"),
         col("Name"),
@@ -64,12 +36,12 @@ def create_dim_parking_lot(spark, path):
         col("BicycleSpaces"),
         col("Type"),
         col("HourlyRate"),
-        col("OperatingHours"),
-        col("SecurityFeatures")
+        col("LastUpdate"),
+
     )
 
-    write_to_warehouse(final_dim_parking_lot_df,
-                       "dim_parking_lot", path, recordkey="ParkingLotKey", precombine="LastUpdated")
+    write_to_warehouse(final_dim_parkinglot, "dim_parkinglot",
+                       path, recordkey="ParkingLotKey", precombine="LastUpdate")
 
 
 if __name__ == "__main__":
@@ -77,5 +49,5 @@ if __name__ == "__main__":
     path = "s3a://gold/main/warehouse/dim_parking_lot/"
     spark = create_spark_session(
         "DimParkingLot", lakefs_user["username"], lakefs_user["password"])
-    create_dim_parking_lot(spark, path)
+    create_dim_parkinglot(spark, path)
     spark.stop()
