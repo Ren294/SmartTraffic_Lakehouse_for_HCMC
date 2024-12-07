@@ -12,8 +12,41 @@ from common import read_silver_main, create_spark_session, get_lakefs, write_to_
 
 
 def create_dim_weather(spark, path):
-    weather_df = read_silver_main(spark, "weather/observations").select(
-        col("datetime").alias("DateTime"),
+
+    accident_df = read_silver_main(spark, "accidents")\
+        .select(col("accident_severity").alias("accident_severity"),
+                col("district").alias("accident_location"),
+                col("accident_time").alias("accident_datetime"))
+
+    weather_df = read_silver_main(spark, "weather")\
+        .select(
+            col("datetime").alias("weather_datetime"),
+            col("temp").alias("temperature"),
+            col("feelslike").alias("feels_like_temperature"),
+            col("humidity").alias("humidity"),
+            col("precipprob").alias("precipitation"),
+            col("preciptype").alias("precipitation_type"),
+            col("snowdepth").alias("snow_depth"),
+            col("windspeed").alias("wind_speed"),
+            col("winddir").alias("wind_direction"),
+            col("pressure").alias("pressure"),
+            col("visibility").alias("visibility"),
+            col("cloudcover").alias("cloud_cover"),
+            col("solarradiation").alias("solar_radiation"),
+            col("uvindex").alias("uv_index"),
+            col("conditions").alias("conditions"),
+            col("severerisk").alias("severe_risk")
+    )
+
+    combined_df = weather_df.join(
+        accident_df,
+        weather_df.weather_datetime == accident_df.accident_datetime,
+        "left"
+    )
+
+    dim_weather_df = combined_df.select(
+        monotonically_increasing_id().alias("WeatherKey"),
+        col("weather_datetime").alias("DateTime"),
         col("temperature").alias("Temperature"),
         col("feels_like_temperature").alias("FeelsLikeTemperature"),
         col("humidity").alias("Humidity"),
@@ -31,43 +64,7 @@ def create_dim_weather(spark, path):
         col("severe_risk").alias("SevereRisk")
     )
 
-    traffic_df = read_silver_main(spark, "traffic/congestion").select(
-        col("datetime").alias("TrafficDateTime"),
-        col("congestion_level").alias("CongestionLevel")
-    )
-
-    accident_df = read_silver_main(spark, "accident/data").select(
-        col("datetime").alias("AccidentDateTime"),
-        col("severity").alias("AccidentSeverity")
-    )
-
-    combined_df = weather_df.join(
-        traffic_df, weather_df.DateTime == traffic_df.TrafficDateTime, "left"
-    ).join(
-        accident_df, weather_df.DateTime == accident_df.AccidentDateTime, "left"
-    )
-
-    final_dim_weather = combined_df.select(
-        monotonically_increasing_id().alias("WeatherKey"),
-        col("DateTime"),
-        col("Temperature"),
-        col("FeelsLikeTemperature"),
-        col("Humidity"),
-        col("Precipitation"),
-        col("PrecipitationType"),
-        col("SnowDepth"),
-        col("WindSpeed"),
-        col("WindDirection"),
-        col("Pressure"),
-        col("Visibility"),
-        col("CloudCover"),
-        col("SolarRadiation"),
-        col("UVIndex"),
-        col("Conditions"),
-        col("SevereRisk")
-    )
-
-    write_to_warehouse(final_dim_weather, "dim_weather", path,
+    write_to_warehouse(dim_weather_df, "dim_weather", path,
                        recordkey="WeatherKey", precombine="DateTime")
 
 
