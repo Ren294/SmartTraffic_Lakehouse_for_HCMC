@@ -32,3 +32,9 @@ def write_to_warehouse(df, table_name, table_path, operation="upsert", recordkey
         .options(**hudi_options) \
         .mode("overwrite") \
         .save(s3_path)
+
+
+def read_warehouse(spark, path_table):
+    s3_path = f"s3a://gold/main/warehouse/{path_table}"
+    df = spark.read.format("hudi").load(s3_path)
+    return df
