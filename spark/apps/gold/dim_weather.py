@@ -20,6 +20,7 @@ def create_dim_weather(spark, path):
 
     weather_df = read_silver_main(spark, "weather")\
         .select(
+            col("date").alias("weather_date"),
             col("datetime").alias("weather_datetime"),
             col("temp").alias("temperature"),
             col("feelslike").alias("feels_like_temperature"),
@@ -36,17 +37,27 @@ def create_dim_weather(spark, path):
             col("uvindex").alias("uv_index"),
             col("conditions").alias("conditions"),
             col("severerisk").alias("severe_risk")
+    )\
+        .withColumn(
+            "DateTime",
+            to_timestamp(
+                concat_ws(
+                    " ",
+                    col("weather_date"),
+                    date_format(col("weather_datetime"), "HH:mm:ss")
+                ), "yyyy-MM-dd HH:mm:ss"
+            )
     )
 
     combined_df = weather_df.join(
         accident_df,
-        weather_df.weather_datetime == accident_df.accident_datetime,
+        weather_df.DateTime == accident_df.accident_datetime,
         "left"
     )
 
     dim_weather_df = combined_df.select(
         monotonically_increasing_id().alias("WeatherKey"),
-        col("weather_datetime").alias("DateTime"),
+        col("DateTime"),
         col("temperature").alias("Temperature"),
         col("feels_like_temperature").alias("FeelsLikeTemperature"),
         col("humidity").alias("Humidity"),
