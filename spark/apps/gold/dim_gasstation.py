@@ -64,7 +64,7 @@ def create_dim_gas_station(spark, path):
 
 if __name__ == "__main__":
     lakefs_user = get_lakefs()
-    path = "s3a://gold/main/warehouse/dim_gas_station/"
+    path = "s3a://gold/main/warehouse/dim_gasstation/"
     spark = create_spark_session(
         "DimGasStation", lakefs_user["username"], lakefs_user["password"])
     create_dim_gas_station(spark, path)
