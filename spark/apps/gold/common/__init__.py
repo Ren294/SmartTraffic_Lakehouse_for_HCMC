@@ -7,6 +7,6 @@
 from .config import create_spark_session
 from .connection import get_lakefs_client, get_lakefs, get_redis_client, get_postgres_properties
 from .table import TableConfig
-from .operator import write_to_warehouse, create_table_warehouse, read_silver_main
+from .operator import write_to_warehouse, create_table_warehouse, read_silver_main, read_warehouse
 __all__ = ['create_spark_session', 'get_lakefs_client',
-           'get_lakefs', 'get_redis_client', 'get_postgres_properties', 'TableConfig', 'write_to_warehouse', 'create_table_warehouse', 'read_silver_main']
+           'get_lakefs', 'get_redis_client', 'get_postgres_properties', 'TableConfig', 'write_to_warehouse', 'create_table_warehouse', 'read_silver_main', 'read_warehouse']
