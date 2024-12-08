@@ -23,8 +23,8 @@ def create_dim_vehicle(spark, path):
         lit('GASOLINE').alias("FuelType"),
         col("last_update").alias("RegistrationDate"),
         lit(300).alias("VehicleLength"),
-        lit(300).alias("VehicleWidth"),
-        lit(300).alias("VehicleHeight")
+        lit(200).alias("VehicleWidth"),
+        lit(350).alias("VehicleHeight")
     )
 
     parking_vehicle_df = read_silver_main(spark, "parking/vehicle").select(
@@ -38,12 +38,29 @@ def create_dim_vehicle(spark, path):
         lit('GASOLINE').alias("FuelType"),
         current_timestamp().alias("RegistrationDate"),
         lit(300).alias("VehicleLength"),
-        lit(300).alias("VehicleWidth"),
-        lit(300).alias("VehicleHeight")
+        lit(200).alias("VehicleWidth"),
+        lit(350).alias("VehicleHeight")
     )
 
-    combined_vehicle_df = gas_vehicle_df.unionByName(
-        parking_vehicle_df, allowMissingColumns=True)
+    traffic_vehicle_df = read_silver_main(spark, "traffic").select(
+        col("license_number").alias("LicensePlate"),
+        col("vehicle_type").alias("VehicleType"),
+        lit("vehicle_classification").alias("VehicleClassification"),
+        lit(None).alias("Brand"),
+        lit(None).alias("Model"),
+        lit(None).alias("Color"),
+        lit(2010).alias("ManufactureYear"),
+        lit('GASOLINE').alias("FuelType"),
+        current_timestamp().alias("RegistrationDate"),
+        (col("length_meters").cast(IntegerType())*100).alias("VehicleLength"),
+        (col("width_meters").cast(IntegerType())*100).alias("VehicleWidth"),
+        (col("height_meters").cast(IntegerType())*100).alias("VehicleHeight")
+    )
+    combined_vehicle_df = gas_vehicle_df\
+        .unionByName(
+            parking_vehicle_df, allowMissingColumns=True)\
+        .unionByName(
+            traffic_vehicle_df, allowMissingColumns=True)
 
     final_dim_vehicle = combined_vehicle_df.withColumn(
         "VehicleKey", monotonically_increasing_id()
