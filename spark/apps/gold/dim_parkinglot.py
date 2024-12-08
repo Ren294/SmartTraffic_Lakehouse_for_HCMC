@@ -46,7 +46,7 @@ def create_dim_parkinglot(spark, path):
 
 if __name__ == "__main__":
     lakefs_user = get_lakefs()
-    path = "s3a://gold/main/warehouse/dim_parking_lot/"
+    path = "s3a://gold/main/warehouse/dim_parkinglot/"
     spark = create_spark_session(
         "DimParkingLot", lakefs_user["username"], lakefs_user["password"])
     create_dim_parkinglot(spark, path)
