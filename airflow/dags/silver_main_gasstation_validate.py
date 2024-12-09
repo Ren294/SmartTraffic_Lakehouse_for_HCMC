@@ -12,7 +12,7 @@ from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 import json
 from lakefs import Repository
-from connection import get_redis_client, get_lakefs_client, spark_submit
+from connection import get_redis_client, get_lakefs_client, spark_submit, check_file_job
 
 default_args = {
     'owner': 'airflow',
@@ -108,7 +108,9 @@ push_branch_tasks = {}
 check_tasks = {}
 push_queue_tasks = {}
 sync_tasks = {}
-
+check_file_checktask = {}
+check_file_synctask = {}
+start_dag_check_file = {}
 for table in tables:
     push_branch_tasks[table] = PythonOperator(
         task_id=f'push_branch_redis_{table}',
@@ -117,7 +119,15 @@ for table in tables:
         provide_context=True,
         dag=dag
     )
+    start_dag_check_file[table] = DummyOperator(
+        task_id=f'start_check_{table}', dag=dag)
 
+    check_file_checktask[table] = SSHOperator(
+        task_id=f'check_check{table}_job_file',
+        ssh_hook=ssh_hook,
+        command=check_file_job(f"batch/gasstation/SilverCheckMain_{table}.py"),
+        dag=dag
+    )
     check_tasks[table] = SSHOperator(
         task_id=f'check_changes_{table}',
         ssh_hook=ssh_hook,
@@ -133,7 +143,12 @@ for table in tables:
         provide_context=True,
         dag=dag
     )
-
+    check_file_synctask[table] = SSHOperator(
+        task_id=f'check_sync{table}_job_file',
+        ssh_hook=ssh_hook,
+        command=check_file_job(f"batch/gasstation/SilverSyncMain_{table}.py"),
+        dag=dag
+    )
     sync_tasks[table] = SSHOperator(
         task_id=f'sync_to_main_{table}',
         ssh_hook=ssh_hook,
@@ -159,5 +174,7 @@ check_spark_connection = SSHOperator(
 start_dag >> check_spark_connection >> create_branch_task
 commit_task >> end_dag
 for table in tables:
-    create_branch_task >> push_branch_tasks[table] >> check_tasks[table] >> \
+    create_branch_task >> start_dag_check_file[table] >> [
+        check_file_checktask[table], check_file_synctask[table]]
+    [check_file_checktask[table], check_file_synctask[table]] >> push_branch_tasks[table] >> check_tasks[table] >> \
         push_queue_tasks[table] >> sync_tasks[table] >> commit_task
