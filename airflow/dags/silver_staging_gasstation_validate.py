@@ -12,7 +12,7 @@ from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 import json
 from lakefs import Repository
-from connection import get_redis_client, get_lakefs_client, spark_submit
+from connection import get_redis_client, get_lakefs_client, spark_submit, check_file_job
 
 default_args = {
     'owner': 'airflow',
@@ -110,13 +110,25 @@ check_tasks = {}
 push_queue_tasks = {}
 update_tasks = {}
 commit_tasks = {}
-
+check_file_checktask = {}
+check_file_update = {}
+start_dag_check_file = {}
 for table in tables:
     push_branch_tasks[table] = PythonOperator(
         task_id=f'push_branch_redis_{table}',
         python_callable=push_branch_to_redis,
         op_kwargs={'table_name': table},
         provide_context=True,
+        dag=dag
+    )
+    start_dag_check_file[table] = DummyOperator(
+        task_id=f'start_check_{table}', dag=dag)
+
+    check_file_checktask[table] = SSHOperator(
+        task_id=f'check_check{table}_job_file',
+        ssh_hook=ssh_hook,
+        command=check_file_job(
+            f"batch/gasstation/SilverCheckChangesStaging_{table}.py"),
         dag=dag
     )
     check_tasks[table] = SSHOperator(
@@ -134,7 +146,13 @@ for table in tables:
         provide_context=True,
         dag=dag
     )
-
+    check_file_update[table] = SSHOperator(
+        task_id=f'check_update{table}_job_file',
+        ssh_hook=ssh_hook,
+        command=check_file_job(
+            f"batch/gasstation/SilverUpdateStaging_{table}.py"),
+        dag=dag
+    )
     update_tasks[table] = SSHOperator(
         task_id=f'update_hudi_{table}',
         ssh_hook=ssh_hook,
@@ -167,5 +185,7 @@ check_spark_connection = SSHOperator(
 start_dag >> check_spark_connection >> create_branch_task
 commit_task >> end_dag
 for table in tables:
-    create_branch_task >> push_branch_tasks[table] >> check_tasks[table] >> \
+    create_branch_task >> start_dag_check_file[table] >> [
+        check_file_checktask[table], check_file_update[table]]
+    [check_file_checktask[table], check_file_update[table]] >> push_branch_tasks[table] >> check_tasks[table] >> \
         push_queue_tasks[table] >> update_tasks[table] >> commit_task
