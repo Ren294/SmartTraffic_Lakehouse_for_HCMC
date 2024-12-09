@@ -12,7 +12,7 @@ from airflow.operators.dummy import DummyOperator
 from datetime import datetime, timedelta
 import json
 from lakefs import Repository
-from connection import get_redis_client, get_lakefs_client, spark_submit
+from connection import get_redis_client, get_lakefs_client, spark_submit, check_file_job
 
 default_args = {
     'owner': 'airflow',
@@ -52,7 +52,13 @@ ssh_hook = SSHHook(ssh_conn_id='spark_server', cmd_timeout=None)
 
 start_dag = DummyOperator(task_id='start_dag', dag=dag)
 
-
+check_file_checktask = SSHOperator(
+    task_id=f'check_updatehudi_job_file',
+    ssh_hook=ssh_hook,
+    command=check_file_job(
+        f"batch/gasstation/SilverUpdateStaging_storagetank.py"),
+    dag=dag
+)
 update_hudi_task = SSHOperator(
     task_id='update_hudi',
     ssh_hook=ssh_hook,
@@ -75,4 +81,4 @@ check_spark_connection = SSHOperator(
 )
 end_dag = DummyOperator(task_id='end_dag', dag=dag)
 
-start_dag >> check_spark_connection >> update_hudi_task >> commit_task >> end_dag
+start_dag >> check_spark_connection >> check_file_checktask >> update_hudi_task >> commit_task >> end_dag
