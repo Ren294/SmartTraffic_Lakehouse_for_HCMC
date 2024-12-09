@@ -12,7 +12,7 @@ from datetime import datetime, timedelta
 from lakefs import Repository
 from airflow.operators.python import PythonOperator
 
-from connection import get_redis_client, get_lakefs_client, spark_submit
+from connection import get_redis_client, get_lakefs_client, spark_submit, check_file_job
 
 DIMENSION_TABLES = [
     'dim_customer',
@@ -92,7 +92,7 @@ for table_name in DIMENSION_TABLES:
     check_file_task[table_name] = SSHOperator(
         task_id=f'check_{table_name}_job_file',
         ssh_hook=ssh_hook,
-        command=f'test -f /opt/spark-apps/gold/{table_name}.py',
+        command=check_file_job(f"gold/{table_name}.py"),
         dag=dag
     )
 
