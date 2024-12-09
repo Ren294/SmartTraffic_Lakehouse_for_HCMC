@@ -13,7 +13,7 @@ from datetime import datetime, timedelta
 import json
 import redis
 from lakefs import Repository
-from connection import get_redis_client, get_lakefs_client, spark_submit
+from connection import get_redis_client, get_lakefs_client, spark_submit, check_file_job
 
 default_args = {
     'owner': 'airflow',
@@ -119,7 +119,13 @@ prepare_spark_config_task = PythonOperator(
     provide_context=True,
     dag=dag
 )
-
+check_file_checktask = SSHOperator(
+    task_id=f'check_checkconflicts_job_file',
+    ssh_hook=ssh_hook,
+    command=check_file_job(
+        f"validate/weather/SilverWeatherStagingCheckConflicts.py"),
+    dag=dag
+)
 check_conflicts_task = SSHOperator(
     task_id='check_conflicts',
     ssh_hook=ssh_hook,
@@ -127,7 +133,13 @@ check_conflicts_task = SSHOperator(
         "validate/weather/SilverWeatherStagingCheckConflicts.py"),
     dag=dag
 )
-
+check_file_mergetask = SSHOperator(
+    task_id=f'check_merge_job_file',
+    ssh_hook=ssh_hook,
+    command=check_file_job(
+        f"validate/weather/SilverWeatherStagingMerge.py"),
+    dag=dag
+)
 merge_data_task = SSHOperator(
     task_id='merge_data',
     ssh_hook=ssh_hook,
@@ -153,4 +165,6 @@ check_spark_connection = SSHOperator(
     command='echo "Connection to Spark server successful"',
     dag=dag
 )
-start_dag >> check_spark_connection >> get_merge_info_task >> prepare_spark_config_task >> check_conflicts_task >> merge_data_task >> commit_changes_task >> end_dag
+start_dag >> check_spark_connection >> [
+    check_file_checktask, check_file_mergetask]
+[check_file_checktask, check_file_mergetask] >> get_merge_info_task >> prepare_spark_config_task >> check_conflicts_task >> merge_data_task >> commit_changes_task >> end_dag
