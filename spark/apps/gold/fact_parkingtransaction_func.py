@@ -23,7 +23,7 @@ def create_fact_parking_transaction(spark, path, operator="upsert"):
             col("fee").alias("fact_amount_paid"),
             lit(None).cast(StringType()).alias("fact_discount_applied"),
             lit(None).cast(StringType()).alias("fact_penalty_charges"),
-            expr("checkouttime - checkintime").alias("fact_parking_duration"),
+            # expr("checkouttime - checkintime").alias("fact_parking_duration"),
             lit(None).cast(StringType()).alias("fact_parking_rate"),
             col("recordid").alias("parking_recordid"),
     )
@@ -46,7 +46,7 @@ def create_fact_parking_transaction(spark, path, operator="upsert"):
     )
 
     dim_vehicle_df = read_warehouse(spark, "dim_vehicle").select(
-        col("vehicleid").alias("fact_parking_vehicleid"), col("licenseplate"))
+        col("VehicleKey").alias("fact_parking_vehicleid"), col("licenseplate"))
 
     dim_location_df = read_warehouse(spark, "dim_location").select(
         col("LocationKey").alias("fact_LocationKey"), col("Street"))
@@ -74,10 +74,11 @@ def create_fact_parking_transaction(spark, path, operator="upsert"):
         col("fact_parking_vehicleid").alias("VehicleKey"),
         col("vehicleid").alias("OwnerKey"),
         col("parking_parkinglotid").alias("ParkingLotKey"),
-        (col("fact_entry_time")/1000).alias("TimeKey"),
+        unix_timestamp(col("fact_entry_time")).alias("TimeKey"),
         col("fact_LocationKey").alias("LocationKey"),
         col("fact_amount_paid").alias("amount_paid"),
-        col("fact_parking_duration").alias("parking_duration"),
+        expr("CAST(UNIX_TIMESTAMP(fact_exit_time) - UNIX_TIMESTAMP(fact_entry_time) AS LONG)").alias(
+            "parking_duration"),
         col("fact_parking_rate").alias("parking_rate"),
         col("fact_entry_time").alias("entry_time"),
         col("fact_exit_time").alias("exit_time"),
