@@ -9,7 +9,7 @@ from pyspark.sql.functions import *
 from pyspark.sql.window import Window
 from datetime import datetime
 from common import read_silver_main, create_spark_session, get_lakefs, write_to_warehouse, create_table_warehouse
-from .fact_gasstationtransaction_func import create_fact_gas_station_sales
+from fact_gasstationtransaction_func import create_fact_gas_station_sales
 
 if __name__ == "__main__":
     lakefs_user = get_lakefs()

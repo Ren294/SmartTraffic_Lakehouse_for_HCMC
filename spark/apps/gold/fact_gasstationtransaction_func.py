@@ -9,6 +9,7 @@ from pyspark.sql.functions import *
 from pyspark.sql.window import Window
 from datetime import datetime
 from common import read_silver_main, create_spark_session, get_lakefs, write_to_warehouse, create_table_warehouse
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
 
 
 def create_fact_gas_station_sales(spark, path, operator="upsert"):
@@ -37,9 +38,9 @@ def create_fact_gas_station_sales(spark, path, operator="upsert"):
     ).withColumn(
         "TaxAmount", col("DetailTotalAmount") * lit(0.1)
     ).withColumn(
-        "Discount", lit(0.0)
+        "Discount", lit(0).cast(IntegerType())
     ).withColumn(
-        "PromotionID", lit(None).cast("string")
+        "PromotionID", lit(None).cast(StringType())
     )
 
     final_fact_gas_station_sales = sales_fact_df.select(
