@@ -35,7 +35,7 @@ dag = DAG(
     'Gold_Fact_Tables_WithUpsert_Load_DAG',
     default_args=default_args,
     description='Submit Spark jobs for dimension tables and commit to main',
-    schedule_interval='@daily',
+    schedule_interval=None,
     catchup=False,
     concurrency=1,
     max_active_runs=1
