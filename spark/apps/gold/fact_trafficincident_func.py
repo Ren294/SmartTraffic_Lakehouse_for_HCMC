@@ -28,10 +28,10 @@ def create_fact_traffic_incident(spark, path, operator="upsert"):
     )
     location_dim = read_warehouse(spark, "dim_location").select(
         col("Street"),
-        col("fact_LocationKey")
+        col("LocationKey").alias("fact_LocationKey")
     )
 
-    weather_dim = read_silver_main(spark, "dim_weather").select(
+    weather_dim = read_warehouse(spark, "dim_weather").select(
         col("WeatherKey").alias("fact_WeatherKey"),
         col("DateTime").alias("WeatherDateTime"),
     )
@@ -42,14 +42,14 @@ def create_fact_traffic_incident(spark, path, operator="upsert"):
         "left"
     ).join(
         weather_dim,
-        accident_df.AccidentDateTime == weather_dim.WeatherDateTime,
+        accident_df.fact_AccidentDateTime == weather_dim.WeatherDateTime,
         "left"
     )
 
     final_fact_traffic_incident = fact_df.select(
         monotonically_increasing_id().alias("IncidentKey"),
         col("fact_LocationKey").alias("LocationKey"),
-        (col("fact_AccidentDateTime")/1000).alias("TimeKey"),
+        unix_timestamp(col("fact_AccidentDateTime")).alias("TimeKey"),
         col("fact_WeatherKey").alias("WeatherKey"),
         col("NumberOfVehicles"),
         col("CarInvolved"),

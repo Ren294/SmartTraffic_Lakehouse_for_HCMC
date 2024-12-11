@@ -11,7 +11,7 @@ from datetime import datetime
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
 
 from common import create_spark_session, get_lakefs
-from .fact_trafficincident_func import create_fact_traffic_incident
+from fact_trafficincident_func import create_fact_traffic_incident
 if __name__ == "__main__":
     lakefs_user = get_lakefs()
     path = "s3a://gold/main/warehouse/fact_trafficincident/"
