@@ -1,0 +1,26 @@
+################################################################################################
+# Project: SmartTraffic_Lakehouse_for_HCMC
+# Author: Nguyen Trung Nghia (ren294)
+# Contact: trungnghia294@gmail.com
+# GitHub: Ren294
+################################################################################################
+
+name: Gold Upsert Data Fact to Warehouse
+description: Triggers Airflow DAG to Upsert Data Fact to Warehouse
+on:
+  post-commit:
+    branches:
+    - staging_*
+hooks:
+- id: trigger_gold_fact_upsert_warehouse
+  type: airflow
+  description: Trigger gold fact upsert warehouse DAG
+  properties:
+    url: "http://airflow-webserver:8080"
+    dag_id: "Gold_Fact_Tables_WithUpsert_Load_DAG"
+    username: "ren294"
+    password: "ren294"
+    wait_for_dag: true
+    timeout: "30m"
+    dag_conf:
+      repository: "silver"
