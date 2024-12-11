@@ -28,19 +28,19 @@ def create_fact_vehicle_movement(spark, path, operator="upsert"):
         col("eta").alias("fact_DestinationETA")
     )
     owner_dim = read_warehouse(spark, "dim_owner").select(
-        col("fact_OwnerKey"),
+        col("OwnerKey").alias("fact_OwnerKey"),
         col("email")
     )
     loc_dim = read_warehouse(spark, "dim_location").select(
-        col("fact_LocationKey"),
-        col("Street")
+        col("LocationKey").alias("fact_LocationKey"),
+        col("Street").alias("SourceStreet")
     )
     loc_dim_des = read_warehouse(spark, "dim_location").select(
-        col("fact_LocationDestinationKey"),
-        col("Street")
+        col("LocationKey").alias("fact_LocationDestinationKey"),
+        col("Street").alias("DestinationStreet")
     )
-    vehicle_dim = read_warehouse(spark, "dim_vehicl").select(
-        col("fact_VehicleKey"),
+    vehicle_dim = read_warehouse(spark, "dim_vehicle").select(
+        col("VehicleKey").alias("fact_VehicleKey"),
         col("LicensePlate")
     )
     fact_df = traffic_df.join(
@@ -49,15 +49,15 @@ def create_fact_vehicle_movement(spark, path, operator="upsert"):
         "left"
     ).join(
         loc_dim,
-        traffic_df.dim_loc == loc_dim.Street,
+        traffic_df.dim_loc == loc_dim.SourceStreet,
         "left"
     ).join(
-        loc_dim,
-        traffic_df.dim_locdes == loc_dim_des.Street,
+        loc_dim_des,
+        traffic_df.dim_locdes == loc_dim_des.DestinationStreet,
         "left"
     ).join(
-        loc_dim,
-        traffic_df.license_number == vehicle_dim.LicensePlate,
+        vehicle_dim,
+        traffic_df.dim_vehicle == vehicle_dim.LicensePlate,
         "left"
     )
 
@@ -67,7 +67,7 @@ def create_fact_vehicle_movement(spark, path, operator="upsert"):
         col("fact_LocationKey").alias("LocationKey"),
         col("fact_LocationDestinationKey").alias("LocationDestinationKey"),
         col("fact_VehicleKey").alias("VehicleKey"),
-        (col("dim_timestamp")/1000).alias("TimeKey"),
+        unix_timestamp(col("dim_timestamp")).alias("TimeKey"),
         col("fact_Speed").alias("Speed"),
         col("fact_RPM").alias("RPM"),
         col("fact_OilPressure").alias("OilPressure"),
