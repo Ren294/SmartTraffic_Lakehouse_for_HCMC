@@ -16,3 +16,4 @@ clickhouse/data
 clickhouse/logs
 hive/metastore
 metabase/db
+kafka/data
