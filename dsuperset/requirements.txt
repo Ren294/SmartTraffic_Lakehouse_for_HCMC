@@ -2,3 +2,4 @@ pyhive
 thrift
 thrift_sasl
 trino
+clickhouse-connect
