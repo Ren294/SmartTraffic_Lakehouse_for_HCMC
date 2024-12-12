@@ -1042,6 +1042,20 @@ services:
     profiles:
       - metabase
 
+  superset:
+    image: nghia294/superset:4.1.4
+    container_name: superset_ch
+    environment:
+      - ADMIN_USERNAME=ren294
+      - ADMIN_EMAIL=trungnghia294@gmail.com
+      - ADMIN_PASSWORD=trungnghia294
+    ports:
+      - "8081:8088"
+    networks:
+      - ren294_network
+    profiles:
+      - ol
+
 networks:
   ren294_network:
     driver: bridge
