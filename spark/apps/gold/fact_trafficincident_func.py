@@ -8,7 +8,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.window import Window
 from datetime import datetime
-from common import read_silver_main, create_spark_session, get_lakefs, write_to_warehouse, read_warehouse
+from common import read_silver_main, write_to_warehouse, read_warehouse
 
 
 def create_fact_traffic_incident(spark, path, operator="upsert"):
