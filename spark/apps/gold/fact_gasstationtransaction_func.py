@@ -8,7 +8,7 @@ from pyspark.sql import SparkSession
 from pyspark.sql.functions import *
 from pyspark.sql.window import Window
 from datetime import datetime
-from common import read_silver_main, create_spark_session, get_lakefs, write_to_warehouse, create_table_warehouse
+from common import read_silver_main, write_to_warehouse
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
 
 

@@ -10,7 +10,7 @@ from pyspark.sql.window import Window
 from datetime import datetime
 from pyspark.sql.types import StructType, StructField, StringType, IntegerType, TimestampType
 
-from common import read_silver_main, create_spark_session, get_lakefs, write_to_warehouse, read_warehouse
+from common import read_silver_main, write_to_warehouse, read_warehouse
 
 
 def create_fact_parking_transaction(spark, path, operator="upsert"):
