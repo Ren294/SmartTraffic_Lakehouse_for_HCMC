@@ -626,6 +626,7 @@ services:
       - fss1
       - hive
       - metabase
+      - oll
 
   lakefs:
     image: treeverse/lakefs:1.40
@@ -665,6 +666,7 @@ services:
       - fss1
       - hive
       - metabase
+      - oll
 
   lakefs-db:
     image: postgres:13
@@ -687,6 +689,7 @@ services:
       - fss1
       - hive
       - metabase
+      - oll
 
   jobmanager:
     image: flink:java8
@@ -913,6 +916,7 @@ services:
     profiles:
       - hive
       - metabase
+      - oll
 
   metastore_db:
     image: postgres:13
@@ -930,6 +934,7 @@ services:
     profiles:
       - hive
       - metabase
+      - oll
 
   # hive-metastore:
   #   image: apache/hive:4.0.0
@@ -1000,6 +1005,7 @@ services:
     profiles:
       - hive
       - metabase
+      - oll
 
   metabase:
     image: bobblybook/metabase:v0.49.13
@@ -1026,6 +1032,7 @@ services:
       - ren294_network
     profiles:
       - metabase
+      - oll
 
   db-metabase:
     image: postgres:13
@@ -1041,6 +1048,7 @@ services:
       - ren294_network
     profiles:
       - metabase
+      - oll
 
   superset:
     image: nghia294/superset:4.1.4
