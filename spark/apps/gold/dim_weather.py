@@ -13,11 +13,6 @@ from common import read_silver_main, create_spark_session, get_lakefs, write_to_
 
 def create_dim_weather(spark, path):
 
-    accident_df = read_silver_main(spark, "accidents")\
-        .select(col("accident_severity").alias("accident_severity"),
-                col("district").alias("accident_location"),
-                col("accident_time").alias("accident_datetime"))
-
     weather_df = read_silver_main(spark, "weather")\
         .select(
             col("date").alias("weather_date"),
@@ -49,13 +44,7 @@ def create_dim_weather(spark, path):
             )
     )
 
-    combined_df = weather_df.join(
-        accident_df,
-        weather_df.DateTime == accident_df.accident_datetime,
-        "left"
-    )
-
-    dim_weather_df = combined_df.select(
+    dim_weather_df = weather_df.select(
         monotonically_increasing_id().alias("WeatherKey"),
         col("DateTime"),
         col("temperature").alias("Temperature"),
