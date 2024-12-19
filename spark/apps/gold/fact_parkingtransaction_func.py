@@ -50,6 +50,7 @@ def create_fact_parking_transaction(spark, path, operator="upsert"):
 
     dim_location_df = read_warehouse(spark, "dim_location").select(
         col("LocationKey").alias("fact_LocationKey"), col("Street"))
+    dim_location_df = dim_location_df.dropDuplicates(["Street"])
 
     fact_parking_transaction_df = parkingrecord_df.join(
         parkinglot_df,
