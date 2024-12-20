@@ -1,0 +1,6 @@
+streamlit
+redis
+psycopg2
+streamlit-card
+streamlit-extras
+pandas
