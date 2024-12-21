@@ -17,3 +17,5 @@ clickhouse/logs
 hive/metastore
 metabase/db
 kafka/data
+prometheus/volume
+grafana/data
