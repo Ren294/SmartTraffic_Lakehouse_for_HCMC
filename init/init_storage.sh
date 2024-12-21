@@ -33,7 +33,6 @@ do
 done
 
 echo -e "${GREEN}Setup completed!${NC}"
-
 echo -e "\n${YELLOW}Verifying Minio buckets:${NC}"
 docker exec storage mc ls renStorage/
 
