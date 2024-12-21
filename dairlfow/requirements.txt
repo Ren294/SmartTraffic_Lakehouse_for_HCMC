@@ -1,2 +1,3 @@
 lakefs
 lakefs-client
+apache-airflow[statsd]
