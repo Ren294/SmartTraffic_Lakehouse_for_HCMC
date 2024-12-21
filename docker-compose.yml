@@ -8,6 +8,11 @@
 x-airflow-common: &airflow-common
   image: ${AIRFLOW_IMAGE_NAME:-apache/airflow:2.9.3}
   environment: &airflow-common-env
+    AIRFLOW__SCHEDULER__STATSD_ON: True
+    AIRFLOW__SCHEDULER__STATSD_HOST: statsd-exporter
+    AIRFLOW__SCHEDULER__STATSD_PORT: 8125
+    AIRFLOW__SCHEDULER__STATSD_PREFIX: airflow
+    AIRFLOW_CONFIG: /opt/airflow/airflow.cfg
     AIRFLOW__CORE__EXECUTOR: CeleryExecutor
     AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
     AIRFLOW__CELERY__RESULT_BACKEND: db+postgresql://airflow:airflow@postgres/airflow
@@ -23,11 +28,14 @@ x-airflow-common: &airflow-common
     - ${AIRFLOW_PROJ_DIR:-.}/logs:/opt/airflow/logs
     - ${AIRFLOW_PROJ_DIR:-.}/config:/opt/airflow/config
     - ${AIRFLOW_PROJ_DIR:-.}/plugins:/opt/airflow/plugins
+    - ${AIRFLOW_PROJ_DIR:-.}/airflow.cfg:/opt/airflow/airflow.cfg
   user: "${AIRFLOW_UID:-50000}:0"
   depends_on: &airflow-common-depends-on
     redis_airflow:
       condition: service_healthy
     postgres:
+      condition: service_healthy
+    statsd-exporter:
       condition: service_healthy
 
 services:
@@ -288,11 +296,6 @@ services:
   flower:
     <<: *airflow-common
     command: celery flower
-    profiles:
-      - flower
-      - all
-      - fs
-      - fs2
     ports:
       - "5555:5555"
     healthcheck:
@@ -308,6 +311,12 @@ services:
         condition: service_completed_successfully
     networks:
       - ren294_network
+    profiles:
+      - flower
+      - all
+      - fs
+      - fs2
+      - airflow
 
   postgres-traffic:
     image: postgres:13
@@ -374,6 +383,7 @@ services:
       - fss1
       - ol
       - ol1
+      - kafka
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.10
@@ -402,6 +412,7 @@ services:
       - fss1
       - ol
       - ol1
+      - kafka
 
   broker:
     image: confluentinc/cp-kafka:7.3.10
@@ -414,8 +425,9 @@ services:
       - "29092:29092"
       - "9092:9092"
       - "9101:9101"
-    # volumes:
-    #   - ./kafka/data:/var/lib/kafka/data
+    volumes:
+      #   - ./kafka/data:/var/lib/kafka/data
+      - ./kafka/kakfaexporter:/usr/share/jmx_exporter/
     environment:
       KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: "zookeeper:2181"
@@ -427,7 +439,7 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
       KAFKA_JMX_PORT: 9101
-      KAFKA_JMX_HOSTNAME: localhost
+      KAFKA_JMX_HOSTNAME: broker
     healthcheck:
       test: nc -z localhost 9092 || exit -1
       start_period: 15s
@@ -447,6 +459,7 @@ services:
       - fss1
       - ol
       - ol1
+      - kafka
 
   rest-proxy:
     image: confluentinc/cp-kafka-rest:7.3.10
@@ -474,6 +487,7 @@ services:
       - fss1
       - ol
       - ol1
+      - kafka
 
   redpanda:
     image: redpandadata/console:v2.7.1
@@ -498,6 +512,7 @@ services:
       - fss1
       - ol
       - ol1
+      - kafka
 
   debezium:
     image: debezium/connect:3.0.0.Final
@@ -595,6 +610,7 @@ services:
       - one1
       - fss1
       - ol
+      - kafka
 
   minio:
     container_name: storage
@@ -606,6 +622,7 @@ services:
     environment:
       MINIO_ROOT_USER: ren294
       MINIO_ROOT_PASSWORD: trungnghia294
+      MINIO_PROMETHEUS_AUTH_TYPE: public
     volumes:
       - ./minio/data:/data
     command: server /data --console-address ":9001"
@@ -764,6 +781,7 @@ services:
 
   redis:
     container_name: redis_traffic
+    hostname: redis_traffic
     image: redis/redis-stack:7.4.0-v0-arm64
     ports:
       - 6379:6379
@@ -780,12 +798,25 @@ services:
       - fss
       - fs1
       - fs2
-      - one1
+      - one11
       - a1
       - a2
       - a3
       - fss1
       - ol
+      - redis
+
+  redis-exporter:
+    image: oliver006/redis_exporter
+    ports:
+      - 9121:9121
+    environment:
+      REDIS_ADDR: "redis_traffic:6379"
+    networks:
+      - ren294_network
+    profiles:
+      - rd
+      - redis
 
   spark-master:
     image: nghia294/spark-arm64:v17.0
@@ -1080,9 +1111,167 @@ services:
     profiles:
       - rd
 
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: prometheus
+    hostname: prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./prometheus/volume:/prometheus
+    networks:
+      - ren294_network
+    profiles:
+      - airflow
+      - monitoring
+      - nifi
+      - redis
+      - kafka
+      - minio
+      - spark
+
+  statsd-exporter:
+    image: prom/statsd-exporter
+    container_name: statsd-exporter
+    command: "--statsd.listen-udp=:8125 --web.listen-address=:9102"
+    ports:
+      - 9123:9102
+      - 8125:8125/udp
+    networks:
+      - ren294_network
+    profiles:
+      - monitoring
+      - airflow
+
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: node-exporter
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - "--path.procfs=/host/proc"
+      - "--path.rootfs=/rootfs"
+      - "--path.sysfs=/host/sys"
+      - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
+    ports:
+      - "9100:9100"
+    networks:
+      - ren294_network
+    profiles:
+      - monitoringa
+
+  cadvisor:
+    image: gcr.io/cadvisor/cadvisor:v0.47.2
+    container_name: cadvisor
+    volumes:
+      - /:/rootfs:ro
+      - /var/run:/var/run:ro
+      - /sys:/sys:ro
+      - /var/lib/docker/:/var/lib/docker:ro
+      - /dev/disk/:/dev/disk:ro
+    ports:
+      - "18088:8080"
+    networks:
+      - ren294_network
+    profiles:
+      - monitoringa
+      - airflow
+
+  # pushgateway:
+  #   image: prom/pushgateway
+  #   restart: always
+  #   expose:
+  #     - 9092
+  #   ports:
+  #     - "9091:9092"
+  #   networks:
+  #     - ren294_network
+  #   profiles:
+  #     - monitoring
+  #     - nifi
+  #     - kafka
+
+  grafana:
+    image: grafana/grafana:10.2.0
+    container_name: grafana
+    ports:
+      - "3001:3000"
+    volumes:
+      - ./grafana/data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    environment:
+      - GF_SECURITY_ADMIN_USER=ren294
+      - GF_SECURITY_ADMIN_PASSWORD=trungnghia294
+      - GF_USERS_ALLOW_SIGN_UP=false
+    depends_on:
+      - prometheus
+    networks:
+      - ren294_network
+    profiles:
+      - monitoring
+      - airflow
+      - nifi
+      - redis
+      - kafka
+      - minio
+      - spark
+
+  kafka-exporter:
+    image: bitnami/kafka-exporter:1.7.0
+    command:
+      - "--kafka.server=broker:29092"
+    ports:
+      - 9308:9308
+    depends_on:
+      - broker
+    networks:
+      - ren294_network
+    profiles:
+      - monitoring
+      - kafka
+
+  jmx-exporter-broker:
+    image: bitnami/jmx-exporter:0.20.0
+    volumes:
+      - ./kafka/kafkaexporter/exporter.yml:/opt/bitnami/jmx-exporter/exporter.yml
+    command:
+      - "5556"
+      - exporter.yml
+    ports:
+      - 9999:5556
+    depends_on:
+      - broker
+    networks:
+      - ren294_network
+    profiles:
+      - monitoring
+      - kafka
+
+  jmx-exporter-controller:
+    image: bitnami/jmx-exporter:0.20.0
+    volumes:
+      - ./kafka/kafkaexporter/exporter.yml:/opt/bitnami/jmx-exporter/exporter.yml
+    command:
+      - "5556"
+      - exporter.yml
+    ports:
+      - 9998:5556
+    depends_on:
+      - broker
+    networks:
+      - ren294_network
+    profiles:
+      - monitoring
+      - kafka
+
 networks:
   ren294_network:
     driver: bridge
 
 volumes:
   postgres-db-volume:
+  prometheus_data:
+  grafana_data:
