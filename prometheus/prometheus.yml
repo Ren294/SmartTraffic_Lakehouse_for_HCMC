@@ -1,0 +1,79 @@
+global:
+  scrape_interval: 30s
+  evaluation_interval: 30s
+  scrape_timeout: 10s
+  external_labels:
+    monitor: 'codelab-monitor'
+
+scrape_configs:
+- job_name: 'prometheus'
+  static_configs:
+  - targets: [ 'prometheus:9090' ]
+
+- job_name: 'statsd-exporter'
+  static_configs:
+  - targets: [ 'statsd-exporter:9102' ]
+
+- job_name: 'redis-exporter'
+  static_configs:
+  - targets: [ 'redis-exporter:9121' ]
+
+- job_name: 'nifi_reporting_job'
+  scrape_interval: 5s
+  static_configs:
+  - targets: [ 'nifi:9092' ]
+
+- job_name: kafka
+  scrape_interval: 10s
+  scrape_timeout: 10s
+  scheme: http
+  static_configs:
+  - targets:
+    - jmx-exporter-broker:5556
+    - jmx-exporter-controller:5556
+    - kafka-exporter:9308
+
+- job_name: minio-job
+  metrics_path: /minio/prometheus/metrics
+  scheme: http
+  static_configs:
+  - targets: [ 'minio:9000' ]
+
+- job_name: 'spark-master'
+  scrape_interval: 10s
+  metrics_path: '/metrics/master/prometheus'
+  static_configs:
+  - targets: [ 'spark-master:8080' ]
+    labels:
+      group: 'spark'
+      instance: 'master'
+
+- job_name: 'spark-worker'
+  scrape_interval: 10s
+  metrics_path: '/metrics/prometheus'
+  static_configs:
+  - targets: [ 'spark-master:8081' ]
+    labels:
+      group: 'spark'
+      instance: 'worker'
+
+- job_name: 'spark-applications'
+  scrape_interval: 10s
+  metrics_path: '/metrics/applications/prometheus'
+  static_configs:
+  - targets: [ 'spark-master:8080' ]
+    labels:
+      group: 'spark'
+      instance: 'applications'
+
+- job_name: 'spark-master-driver'
+  scrape_interval: 10s
+  metrics_path: '/metrics/prometheus/'
+  static_configs:
+  - targets: [ 'spark:4040' ]
+    labels:
+      group: 'spark'
+      instance: 'driver'
+
+  tls_config:
+    insecure_skip_verify: true
