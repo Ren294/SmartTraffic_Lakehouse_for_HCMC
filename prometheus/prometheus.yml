@@ -52,7 +52,7 @@ scrape_configs:
   scrape_interval: 10s
   metrics_path: '/metrics/prometheus'
   static_configs:
-  - targets: [ 'spark-master:8081' ]
+  - targets: [ 'spark-worker:8080' ]
     labels:
       group: 'spark'
       instance: 'worker'
@@ -70,10 +70,28 @@ scrape_configs:
   scrape_interval: 10s
   metrics_path: '/metrics/prometheus/'
   static_configs:
-  - targets: [ 'spark:4040' ]
+  - targets: [ 'spark-master:4040' ]
     labels:
       group: 'spark'
       instance: 'driver'
+
+- job_name: 'flink'
+  metrics_path: '/'
+  static_configs:
+  - targets: [ 'jobmanager:9249', 'taskmanager:9249' ]
+
+- job_name: clickhouse
+  static_configs:
+  - targets: [ 'ch-exporter:9116' ]
+
+- job_name: 'cadvisor'
+  scrape_interval: 5s
+  static_configs:
+  - targets: [ 'cadvisor:8080' ]
+
+- job_name: node
+  static_configs:
+  - targets: [ 'node-exporter:9100' ]
 
   tls_config:
     insecure_skip_verify: true
