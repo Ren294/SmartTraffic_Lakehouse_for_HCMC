@@ -37,7 +37,6 @@ public class TrafficAccidentDataProcessor {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // Kafka Consumer Configuration
         Properties consumerProps = new Properties();
         consumerProps.setProperty("bootstrap.servers", "broker:29092");
         consumerProps.setProperty("group.id", "accident-processor");
@@ -50,7 +49,6 @@ public class TrafficAccidentDataProcessor {
         );
         consumer.setStartFromEarliest();
 
-        // Kafka Producer Configuration
         Properties producerProps = new Properties();
         producerProps.setProperty("bootstrap.servers", "broker:29092");
         FlinkKafkaProducer<String> producer = new FlinkKafkaProducer<>(
@@ -70,7 +68,6 @@ public class TrafficAccidentDataProcessor {
                             JsonNode root = mapper.readTree(value);
                             StringBuilder csv = new StringBuilder();
 
-                            // Count vehicles by type
                             int carCount = 0;
                             int motobikeCount = 0;
                             int otherCount = 0;
@@ -91,7 +88,6 @@ public class TrafficAccidentDataProcessor {
                                 }
                             }
 
-                            // Prepare data for Redis
                             String roadName = normalizeRoadName(root.get("road_name").asText());
                             Map<String, String> accidentData = new HashMap<>();
                             accidentData.put("road_name", root.get("road_name").asText());
@@ -107,12 +103,10 @@ public class TrafficAccidentDataProcessor {
                             accidentData.put("congestion_km", String.valueOf(root.get("congestion_km").asDouble()));
                             accidentData.put("description", root.get("description").asText());
 
-                            // Store in Redis with key pattern accident_<road_name>
                             try (Jedis jedis = jedisPool.getResource()) {
                                 jedis.hmset("accident_" + roadName, accidentData);
                             }
 
-                            // Build CSV string
                             csv.append(cleanValue(root.get("road_name").asText())).append(",");
                             csv.append(cleanValue(root.get("district").asText())).append(",");
                             csv.append(cleanValue(root.get("city").asText())).append(",");
