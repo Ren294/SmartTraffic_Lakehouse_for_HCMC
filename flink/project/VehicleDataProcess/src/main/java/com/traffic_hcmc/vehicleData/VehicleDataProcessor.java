@@ -28,7 +28,6 @@ public class VehicleDataProcessor {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // Kafka Consumer Configuration
         Properties consumerProps = new Properties();
         consumerProps.setProperty("bootstrap.servers", "broker:29092");
         consumerProps.setProperty("group.id", "vehicle-processor");
@@ -41,7 +40,6 @@ public class VehicleDataProcessor {
         );
         consumer.setStartFromEarliest();
 
-        // Kafka Producer Configuration
         Properties producerProps = new Properties();
         producerProps.setProperty("bootstrap.servers", "broker:29092");
         FlinkKafkaProducer<String> producer = new FlinkKafkaProducer<>(
@@ -61,7 +59,6 @@ public class VehicleDataProcessor {
                             JsonNode root = mapper.readTree(value);
                             StringBuilder csv = new StringBuilder();
 
-                            // Build CSV string with all required fields
                             csv.append(cleanValue(root.get("vehicle_id").asText())).append(",");
                             csv.append(cleanValue(root.path("owner").path("name").asText())).append(",");
                             csv.append(cleanValue(root.path("owner").path("license_number").asText())).append(",");
