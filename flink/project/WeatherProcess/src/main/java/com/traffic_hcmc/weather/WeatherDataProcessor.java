@@ -33,7 +33,6 @@ public class WeatherDataProcessor {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // Kafka Consumer Configuration
         Properties consumerProps = new Properties();
         consumerProps.setProperty("bootstrap.servers", "broker:29092");
         consumerProps.setProperty("group.id", "weather-processor");
@@ -46,7 +45,6 @@ public class WeatherDataProcessor {
         );
         consumer.setStartFromEarliest();
 
-        // Kafka Producer Configuration
         Properties producerProps = new Properties();
         producerProps.setProperty("bootstrap.servers", "broker:29092");
         FlinkKafkaProducer<String> producer = new FlinkKafkaProducer<>(
@@ -66,7 +64,6 @@ public class WeatherDataProcessor {
                             JsonNode root = mapper.readTree(value);
                             StringBuilder csv = new StringBuilder();
 
-                            // Prepare data for Redis
                             Map<String, String> weatherData = new HashMap<>();
                             weatherData.put("datetime", root.get("datetime").asText());
                             weatherData.put("datetimeEpoch", String.valueOf(root.get("datetimeEpoch").asLong()));
@@ -113,12 +110,10 @@ public class WeatherDataProcessor {
                             weatherData.put("address", root.get("address").asText());
                             weatherData.put("tzoffset", String.valueOf(root.get("tzoffset").asInt()));
 
-                            // Store in Redis with fixed key "weather"
                             try (Jedis jedis = jedisPool.getResource()) {
                                 jedis.hmset("weather", weatherData);
                             }
 
-                            // Original CSV processing for Kafka
                             csv.append(cleanValue(root.get("datetime").asText())).append(",");
                             csv.append(root.get("datetimeEpoch").asLong()).append(",");
                             csv.append(df.format(root.get("temp").asDouble())).append(",");
@@ -130,7 +125,6 @@ public class WeatherDataProcessor {
                             csv.append(df.format(root.get("snow").asDouble())).append(",");
                             csv.append(df.format(root.get("snowdepth").asDouble())).append(",");
 
-                            // Handle preciptype with comma removal
                             JsonNode preciptype = root.get("preciptype");
                             if (preciptype.isNull()) {
                                 csv.append("").append(",");
@@ -142,7 +136,6 @@ public class WeatherDataProcessor {
                                 csv.append("").append(",");
                             }
 
-                            // Continue with remaining fields
                             csv.append(df.format(root.get("windgust").asDouble())).append(",");
                             csv.append(df.format(root.get("windspeed").asDouble())).append(",");
                             csv.append(df.format(root.get("winddir").asDouble())).append(",");
@@ -165,7 +158,6 @@ public class WeatherDataProcessor {
                             csv.append(cleanValue(root.get("address").asText())).append(",");
                             csv.append(root.get("tzoffset").asInt()).append(",");
 
-                            // Process day fields with comma removal
                             JsonNode day = root.get("day");
                             csv.append(df.format(day.get("visibility").asDouble())).append(",");
                             csv.append(df.format(day.get("cloudcover").asDouble())).append(",");
