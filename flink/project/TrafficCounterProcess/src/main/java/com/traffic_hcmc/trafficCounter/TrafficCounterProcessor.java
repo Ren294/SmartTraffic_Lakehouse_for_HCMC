@@ -57,7 +57,6 @@ public class TrafficCounterProcessor {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // Kafka Consumer Configuration
         Properties consumerProps = new Properties();
         consumerProps.setProperty("bootstrap.servers", "broker:29092");
         consumerProps.setProperty("group.id", "vehicle-count-processor");
@@ -88,7 +87,6 @@ public class TrafficCounterProcessor {
                     }
                 });
 
-        // Process the stream with sliding windows
         vehicleStream
                 .keyBy(data -> normalizeRoadName(data.road) + "_" + data.district)
                 .window(SlidingProcessingTimeWindows.of(Time.minutes(5), Time.minutes(1)))
@@ -102,23 +100,19 @@ public class TrafficCounterProcessor {
                         vehicleCounts.put("Bus", 0);
                         vehicleCounts.put("Bicycle", 0);
 
-                        // Count vehicles by type
                         for (VehicleData data : elements) {
                             vehicleCounts.merge(data.vehicleType, 1, Integer::sum);
                         }
 
-                        // Store in Redis
                         try (Jedis jedis = jedisPool.getResource()) {
                             String redisKey = "traffic_" + key;
                             Map<String, String> redisData = new HashMap<>();
 
-                            // Convert counts to strings for Redis
                             for (Map.Entry<String, Integer> entry : vehicleCounts.entrySet()) {
                                 redisData.put(entry.getKey(), String.valueOf(entry.getValue()));
                             }
 
                             jedis.hmset(redisKey, redisData);
-                            // Set expiry time to 10 minutes (twice the window size)
                             jedis.expire(redisKey, 600);
                         }
                     }
