@@ -40,7 +40,6 @@ public class StorageTankProcessor {
             this.capacity = after.get("capacity").asInt();
             this.materialType = after.get("materialtype").asText();
 
-            // Handle potential byte conversion for currentquantity
             JsonNode currentQuantityNode = after.get("currentquantity");
             this.currentQuantity = currentQuantityNode != null ? currentQuantityNode.asText() : "N/A";
         }
@@ -49,7 +48,6 @@ public class StorageTankProcessor {
     public static void main(String[] args) throws Exception {
         StreamExecutionEnvironment env = StreamExecutionEnvironment.getExecutionEnvironment();
 
-        // Kafka Consumer Configuration
         Properties consumerProps = new Properties();
         consumerProps.setProperty("bootstrap.servers", "broker:29092");
         consumerProps.setProperty("group.id", "storage-tank-processor");
@@ -72,7 +70,6 @@ public class StorageTankProcessor {
                         JsonNode root = mapper.readTree(value);
                         JsonNode payload = root.get("payload");
 
-                        // Process 'create', 'update', or 'read' operations
                         if (payload.has("op") &&
                                 (payload.get("op").asText().equals("c") ||
                                         payload.get("op").asText().equals("u") ||
@@ -82,19 +79,14 @@ public class StorageTankProcessor {
                         return null;
                     }
                 })
-                // Filter out null values
                 .filter(data -> data != null);
 
-        // Process the stream and store in Redis
         storageTankStream.map(data -> {
             try (Jedis jedis = jedisPool.getResource()) {
-                // Create Redis key based on gas station ID
                 String redisKey = "storage_tank_" + data.gasStationId;
 
-                // Create a unique hash key for each tank within the gas station
                 String tankHashKey = "tank_" + data.tankId;
 
-                // Prepare Redis hash data for this specific tank
                 Map<String, String> redisData = new HashMap<>();
                 redisData.put("tankid", String.valueOf(data.tankId));
                 redisData.put("tankname", data.tankName);
@@ -102,13 +94,12 @@ public class StorageTankProcessor {
                 redisData.put("materialtype", data.materialType);
                 redisData.put("currentquantity", data.currentQuantity);
 
-                // Store the tank data as a nested hash in Redis
                 jedis.hset(redisKey, tankHashKey, mapper.writeValueAsString(redisData));
 
                 System.out.println("Processed tank: " + redisKey + " - " + tankHashKey);
             }
             return data;
-        }).print(); // Optional: print for logging
+        }).print();
 
         env.execute("Storage Tank Processor");
     }
