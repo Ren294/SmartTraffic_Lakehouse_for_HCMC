@@ -1,5 +1,7 @@
 # SmartTraffic_Lakehouse_for_HCMC
 
+**WARNING:** This project only runs on ARM64 chips.
+
 # Datasets Selection
 
 ## 1. Parking transactions data in HCM City on PostgreSQL
@@ -174,3 +176,15 @@ Here is the schema of the provided JSON, described in a hierarchical structure:
   ]
 }
 ```
+
+# System Architecture
+
+The **Data Lakehouse** architecture implemented in this project is meticulously designed to accommodate both batch and real-time streaming data, seamlessly integrating multiple data sources into a cohesive analytics platform. This architecture follows the Medallion Architecture pattern, which organizes data into **Bronze**, **Silver**, and **Gold** layers, each serving specific roles in the data lifecycle.
+
+## System Overview
+
+The system is divided into several components, each responsible for specific tasks within the data process:
+
+  <center>
+      <img src="image/Operate/Overview.png" width="900" />
+  </center>
