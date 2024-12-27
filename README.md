@@ -2,6 +2,8 @@
 
 **WARNING:** This project only runs on ARM64 chips.
 
+# Project Objective
+
 # Datasets Selection
 
 ## 1. Parking transactions data in HCM City on PostgreSQL
