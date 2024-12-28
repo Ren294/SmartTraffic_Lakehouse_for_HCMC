@@ -13,7 +13,7 @@
 This database manages operations for a parking lot system in Ho Chi Minh City, Vietnam, tracking everything from parking records to customer feedback. The database contains operational data for managing parking facilities, including vehicle tracking, payment processing, customer management, and staff scheduling.
 
 <center>
-      <img src="image/ERD/GasStation.png" width="900" />
+      <img src="image/ERD/GasStation1.png" width="900" />
   </center>
 
 ## 2. Gas Station data in HCM City on PostgreSQL
@@ -23,7 +23,7 @@ This database manages operations for a parking lot system in Ho Chi Minh City, V
 This database manages operations for a chain of gas stations in Ho Chi Minh city, Viet Nam, tracking everything from fuel sales to inventory management. The database contains operational data for managing gas stations, including sales transactions, inventory tracking, customer management, and employee records.
 
 <center>
-      <img src="image/ERD/ParkingTransaction.png" width="900" />
+      <img src="image/ERD/ParkingTransaction1.png" width="900" />
   </center>
 
 ## 3. IOT data road transport in HCM City
