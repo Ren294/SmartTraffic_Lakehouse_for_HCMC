@@ -414,7 +414,7 @@ The Gold Layer in a data lakehouse architecture represents the final, refined st
 The schema DataWarehouse:
 
 <center>
-      <img src="image/ERD/Warehouse.png" width="900" />
+      <img src="image/ERD/WarehouseGold.png" width="900" />
   </center>
 
 # Deployment
