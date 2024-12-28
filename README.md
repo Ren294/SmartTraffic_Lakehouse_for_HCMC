@@ -239,17 +239,17 @@ The architecture consists of several key components:
       <img src="image/Operate/BronzeStage.png" width="900" />
   </center>
 
-#### a. Data Ingestion Layer
+### a. Data Ingestion Layer
 
 The Bronze stage serves as the initial landing zone for raw data, implementing a robust ingestion and validation pipeline:
 
-##### Real-time Data Sources
+#### Real-time Data Sources
 
 - **Weather API Data**: Live weather metrics and forecasts
 - **Traffic Data**: Real-time traffic conditions and events
 - **Vehicle IOT Data**: Streaming vehicle telemetry and sensor data
 
-##### Ingestion Process
+#### Ingestion Process
 
 - **Initial Collection**
   - `Apache NiFi` orchestrates data collection from all sources
@@ -260,11 +260,11 @@ The Bronze stage serves as the initial landing zone for raw data, implementing a
   - Implements message validation and schema verification
   - Maintains data lineage and source tracking
 
-#### b. Storage Management
+### b. Storage Management
 
 The Bronze stage implements a sophisticated version-controlled storage strategy:
 
-##### Version Control Process
+#### Version Control Process
 
 - **Branch Management**
   - Creates temporary branches from main Bronze repository
@@ -275,7 +275,7 @@ The Bronze stage implements a sophisticated version-controlled storage strategy:
   - `Airflow` DAGs orchestrate `Spark` jobs for data verification
   - Successful validation merges changes to main branch
 
-#### c. Monitoring & Performance
+### c. Monitoring & Performance
 
 - **Caching Layer**: `Redis` implementation for frequently accessed data
 - **Monitoring Stack**:
@@ -289,18 +289,18 @@ The Bronze stage implements a sophisticated version-controlled storage strategy:
         <img src="image/Operate/SilverStage.png" width="900" />
   </center>
 
-#### a. Data Sources Integration
+### a. Data Sources Integration
 
 The Silver stage combines multiple data streams and implements advanced processing:
 
-##### Change Data Capture (CDC)
+#### Change Data Capture (CDC)
 
 - **PostgreSQL Integration**:
   - Real-time monitoring of ParkingLot and StorageTank tables
   - `Seatunnel` implementation with `Debezium` format
   - Maintains data consistency and transaction order
 
-##### Stream Processing Architecture
+#### Stream Processing Architecture
 
 - **Real-time Processing Pipeline**
 
@@ -313,11 +313,11 @@ The Silver stage combines multiple data streams and implements advanced processi
   - Implements data quality rules and business constraints
   - Maintains data consistency across branches
 
-#### b. Multi-Branch Processing Strategy
+### b. Multi-Branch Processing Strategy
 
 The Silver stage implements a sophisticated branching strategy:
 
-##### Staging Branch Processing
+#### Staging Branch Processing
 
 - **Change Detection**
   - Continuous monitoring of data changes
@@ -329,7 +329,7 @@ The Silver stage implements a sophisticated branching strategy:
   - Implements validation before commit
   - Maintains data lineage and audit trails
 
-##### Main Branch Updates
+#### Main Branch Updates
 
 - **Hourly Synchronization:**
   - `Airflow` DAGs orchestrate main branch updates
@@ -338,13 +338,13 @@ The Silver stage implements a sophisticated branching strategy:
 
 #### c. Data Serving Layer
 
-##### Analytics Processing
+#### Analytics Processing
 
 - `ClickHouse` collects processed Kafka data
 - `Superset` provides visualization capabilities
 - Implements real-time analytics queries
 
-##### Application Integration
+#### Application Integration
 
 - `Streamlit` applications consume processed data
 - Combines `Redis` cache with `PostgreSQL` data
@@ -356,11 +356,11 @@ The Silver stage implements a sophisticated branching strategy:
       <img src="image/Operate/GoldStage.png" width="900" />
   </center>
 
-#### a. Dimensional Modeling
+#### Dimensional Modeling
 
 The Gold stage implements a robust dimensional model:
 
-##### Dimension Tables Management
+#### Dimension Tables Management
 
 - **Daily Processing**
 
