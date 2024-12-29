@@ -38,3 +38,11 @@ docker exec storage mc ls renStorage/
 
 echo -e "\n${YELLOW}Verifying LakeFS repositories:${NC}"
 docker exec lakefs lakectl repo list
+
+echo -e "\n${YELLOW}Uploading Bronze actions...${NC}"
+docker exec lakefs bash /home/script/upload_bronze_actions.sh
+
+echo -e "\n${YELLOW}Uploading Silver actions...${NC}"
+docker exec lakefs bash /home/script/upload_silver_actions.sh
+
+echo -e "${GREEN}All initialization and uploads completed!${NC}"
