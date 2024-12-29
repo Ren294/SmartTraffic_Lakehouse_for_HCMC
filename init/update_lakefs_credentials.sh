@@ -1,14 +1,15 @@
 #!/bin/bash
-
-# update_lakefs_credentials.sh
-
-# Colors for output
+########################################################################################
+# Project: SmartTraffic_Lakehouse_for_HCMC
+# Author: Nguyen Trung Nghia (ren294)
+# Contact: trungnghia294@gmail.com
+# GitHub: Ren294
+########################################################################################
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 YELLOW='\033[1;33m'
 NC='\033[0m'
 
-# Check if credentials are provided
 if [ "$#" -ne 2 ]; then
     echo -e "${RED}Error: Please provide both username and password${NC}"
     echo "Usage: $0 <access_key_id> <secret_access_key>"
