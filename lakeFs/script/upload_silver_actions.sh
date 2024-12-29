@@ -1,7 +1,7 @@
 #!/bin/bash
 
-SOURCE_DIR="/home/actions/bronze"
-REPO="bronze"
+SOURCE_DIR="/home/actions/silver"
+REPO="silver"
 BRANCH="main"
 LAKEFS_PATH="_lakefs_actions"
 
@@ -36,7 +36,7 @@ echo "Upload process completed"
 
 echo "Committing changes..."
 commit_uri="lakefs://${REPO}/${BRANCH}"
-lakectl commit "$commit_uri" -m "Uploaded YAML files from bronze actions directory"
+lakectl commit "$commit_uri" -m "Uploaded YAML files from silver actions directory"
 
 if [ $? -eq 0 ]; then
     echo "Successfully committed changes"
