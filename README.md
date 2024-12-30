@@ -2,7 +2,32 @@
 
 > **WARNING:** This project only runs on ARM64 chips.
 
+# Table of Contents
+
+1. **[Project Objective](#project-objective)**
+2. **[Datasets Selection](#datasets-selection)**
+3. **[System Architecture](#system-architecture)**
+   - [System Overview](#system-overview)
+   - [Data Processing Stages](#data-processing-stages)
+   - [Data Warehouse Architecture in the Gold Layer](#data-warehouse-architecture-in-the-gold-layer)
+4. **[Technologies Used](#technologies-used)**
+5. **[Deployment](#deployment)**
+   - [System Requirements](#system-requirements)
+   - [Running the Project](#running-the-project)
+6. **[Result](#result)**
+7. **[Authors](#authors)**
+
 # Project Objective
+
+The project aims to build a `Smart Traffic Management System` that leverages real-time data processing, advanced visualization, and monitoring to optimize traffic flow, enhance safety, and support sustainable urban mobility. Key objectives include:
+
+- **Real-Time Insights**: Deliver actionable traffic data on congestion, accidents, and vehicle movement.
+- **Data Integration**: Process and store high-volume traffic data from IoT devices and sensors.
+- **Visualization**: Provide intuitive dashboards for traffic trends, weather, and parking analysis.
+- **Monitoring**: Ensure system reliability with real-time infrastructure monitoring.
+- **User Applications**: Offer real-time traffic updates through user-friendly apps.
+
+This system transforms raw traffic data into valuable insights, enabling smarter, safer, and greener cities.
 
 # Datasets Selection
 
@@ -10,7 +35,7 @@
 
 - Source: [ParkingDB_HCMCity_PostgreSQL](https://www.kaggle.com/datasets/ren294/parkingdb-hcmcity-postgres)
 
-This database manages operations for a parking lot system in Ho Chi Minh City, Vietnam, tracking everything from parking records to customer feedback. The database contains operational data for managing parking facilities, including vehicle tracking, payment processing, customer management, and staff scheduling.
+This database manages operations for a parking lot system in **Ho Chi Minh City, Vietnam**, tracking everything from parking records to customer feedback. The database contains operational data for managing parking facilities, including vehicle tracking, payment processing, customer management, and staff scheduling.
 
 <center>
       <img src="image/ERD/GasStation1.png" width="900" />
@@ -20,7 +45,7 @@ This database manages operations for a parking lot system in Ho Chi Minh City, V
 
 - Source: [GasStationDB_HCMCity_PostgreSQL](https://www.kaggle.com/datasets/ren294/gasstationdb-hcmcity-postgres)
 
-This database manages operations for a chain of gas stations in Ho Chi Minh city, Viet Nam, tracking everything from fuel sales to inventory management. The database contains operational data for managing gas stations, including sales transactions, inventory tracking, customer management, and employee records.
+This database manages operations for a chain of gas stations in **Ho Chi Minh city, Viet Nam**, tracking everything from fuel sales to inventory management. The database contains operational data for managing gas stations, including sales transactions, inventory tracking, customer management, and employee records.
 
 <center>
       <img src="image/ERD/ParkingTransaction1.png" width="900" />
@@ -32,7 +57,7 @@ This database manages operations for a chain of gas stations in Ho Chi Minh city
 
 The dataset provided describes information about a vehicle (in this case, a motorbike) moving along a specific road in Ho Chi Minh City. It includes various details about the vehicle, its owner, weather conditions, traffic status, and alerts related to the vehicle during its journey. This data can be used in traffic monitoring systems, vehicle operation analysis, or smart transportation services.
 
-Here is the schema of the provided JSON, described in a hierarchical structure:
+Here is the schema of the provided `JSON`, described in a hierarchical structure:
 
 ```json
 {
@@ -103,9 +128,9 @@ Here is the schema of the provided JSON, described in a hierarchical structure:
 
 - Source: [Traffic_Accidents_HCMCity](https://www.kaggle.com/datasets/ren294/traffic-accidents-hcmcity)
 
-The dataset provided contains information about a road accident that took place on various roads inHo Chi Minh City. It includes details about the accident, such as the vehicles involved, severity, accident time, recovery time, and traffic congestion caused by the accident. This data can be useful for traffic management systems, accident reporting, and analyzing traffic patterns.
+The dataset provided contains information about a road accident that took place on various roads in **Ho Chi Minh City, Viet Nam**. It includes details about the accident, such as the vehicles involved, severity, accident time, recovery time, and traffic congestion caused by the accident. This data can be useful for traffic management systems, accident reporting, and analyzing traffic patterns.
 
-Here is the schema of the provided JSON, described in a hierarchical structure:
+Here is the schema of the provided `JSON`, described in a hierarchical structure:
 
 ```json
 {
@@ -131,9 +156,9 @@ Here is the schema of the provided JSON, described in a hierarchical structure:
 
 - Source: [VisualCrossing](https://www.visualcrossing.com/weather-api)
 
-The dataset provided contains detailed weather information for Ho Chi Minh City, including temperature, humidity, wind conditions, precipitation, and other meteorological measurements. This data is collected hourly and aggregated daily, useful for weather forecasting, climate analysis, and urban planning applications.
+The dataset provided contains detailed weather information for **Ho Chi Minh City, Viet Nam**, including temperature, humidity, wind conditions, precipitation, and other meteorological measurements. This data is collected hourly and aggregated daily, useful for weather forecasting, climate analysis, and urban planning applications.
 
-Here is the schema of the provided JSON, described in a hierarchical structure:
+Here is the schema of the provided `JSON`, described in a hierarchical structure:
 
 ```json
 {
@@ -241,7 +266,7 @@ The architecture consists of several key components:
 
 ### a. Data Ingestion Layer
 
-The Bronze stage serves as the initial landing zone for raw data, implementing a robust ingestion and validation pipeline:
+The **Bronze stage** serves as the initial landing zone for raw data, implementing a robust ingestion and validation pipeline:
 
 #### Real-time Data Sources
 
@@ -262,12 +287,12 @@ The Bronze stage serves as the initial landing zone for raw data, implementing a
 
 ### b. Storage Management
 
-The Bronze stage implements a sophisticated version-controlled storage strategy:
+The **Bronze stage** implements a sophisticated version-controlled storage strategy:
 
 #### Version Control Process
 
 - **Branch Management**
-  - Creates temporary branches from main Bronze repository
+  - Creates temporary branches from main **Bronze** repository
   - Implements atomic commits for data consistency
   - Maintains data versioning through `lakeFS`
 - **Commit Workflow**
@@ -291,12 +316,12 @@ The Bronze stage implements a sophisticated version-controlled storage strategy:
 
 ### a. Data Sources Integration
 
-The Silver stage combines multiple data streams and implements advanced processing:
+The **Silver stage** combines multiple data streams and implements advanced processing:
 
 #### Change Data Capture (CDC)
 
 - **PostgreSQL Integration**:
-  - Real-time monitoring of ParkingLot and StorageTank tables
+  - Real-time monitoring of `ParkingLot` and `StorageTank` tables
   - `Seatunnel` implementation with `Debezium` format
   - Maintains data consistency and transaction order
 
@@ -315,7 +340,7 @@ The Silver stage combines multiple data streams and implements advanced processi
 
 ### b. Multi-Branch Processing Strategy
 
-The Silver stage implements a sophisticated branching strategy:
+The **Silver stage** implements a sophisticated branching strategy:
 
 #### Staging Branch Processing
 
@@ -341,7 +366,7 @@ The Silver stage implements a sophisticated branching strategy:
 
 #### Analytics Processing
 
-- `ClickHouse` collects processed Kafka data
+- `ClickHouse` collects processed `Kafka` data
 - `Superset` provides visualization capabilities
 - Implements real-time analytics queries
 
@@ -364,12 +389,11 @@ The **Gold stage** implements a robust dimensional model:
 #### Dimension Tables Management
 
 - **Daily Processing**
-
   - Scheduled `Airflow` DAGs process **Silver layer** data
   - Implements slowly changing dimension logic
   - Maintains historical accuracy and tracking
-- **Aggregation Pipeline**
 
+- **Aggregation Pipeline**
   - `Spark` jobs perform complex aggregations
   - Implements business rules and calculations
   - Maintains data consistency and accuracy
@@ -377,12 +401,11 @@ The **Gold stage** implements a robust dimensional model:
 #### b. Fact Table Processing
 
 - **Real-time Updates**
-
   - Triggered by **Silver layer** changes
   - Implements upsert operations for fact tables
   - Maintains transactional consistency
-- **Batch Processing**
 
+- **Batch Processing**
   - Daily scheduled updates from **Silver layer**
   - Implements full refresh of fact tables
   - Maintains historical accuracy
@@ -408,9 +431,9 @@ The **Gold stage** implements a robust dimensional model:
   - `Grafana` dashboards for monitoring
   - Implements SLA monitoring and alerting
 
-# Data Warehouse Architecture in the Gold Layer
+## Data Warehouse Architecture in the Gold Layer
 
-The **Gold Layer** in a data lakehouse architecture represents the final, refined stage where clean, processed, and analytics-ready data is stored. This layer is specifically designed for consumption by business intelligence tools, data scientists, and analysts. In the context of an Traffic Data Warehouse, the **Gold Layer** is where critical business metrics, aggregated datasets, and key insights are stored in an optimized format.
+The **Gold Layer** in a data lakehouse architecture represents the final, refined stage where clean, processed, and analytics-ready data is stored. This layer is specifically designed for consumption by business intelligence tools, data scientists, and analysts. In the context of an *Traffic Data Warehouse*, the **Gold Layer** is where critical business metrics, aggregated datasets, and key insights are stored in an optimized format.
 
 The schema DataWarehouse:
 
@@ -485,6 +508,7 @@ To deploy and run this *Data Lakehouse* project, the following system requiremen
       Access Key ID    :  XXXXXXXXXXXXXXXXXXX
       Secret Access Key: XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
     ```
+
   - Edit the [init.sh](./init.sh) file and update these lines with your `LakeFS` credentials:
 
     ```bash
@@ -563,6 +587,7 @@ To kick off your data processing workflows, follow these steps to configure and 
 
   - **Username**: *ren294*
   - **Password**: *ren294*
+
 - After login, it's time to activate the **DAGs (Directed Acyclic Graphs)** that control the data workflows. The project consists of ten pre-configured `DAGs`, which you can activate from the `Airflow` dashboard:
 
   <center>
@@ -678,17 +703,17 @@ Here are the ten DAGs and their respective functions:
       <img src="image/Redis/Redis.png" width="900" />
   </center>
 
-  - Use this dashboard to perform administrative tasks, such as analyzing key usage and monitoring latency, to ensure Redis is performing optimally for your application. The intuitive UI helps streamline debugging and data analysis.
+  - Use this dashboard to perform administrative tasks, such as analyzing key usage and monitoring latency, to ensure `Redis` is performing optimally for your application. The intuitive UI helps streamline debugging and data analysis.
 
 **2.9. Clikhouse via Dbeaver**
 
 - To connect to the `ClickHouse` database through `DBeaver`, configure the connection using the following settings:
 
-  - Host: localhost
-  - Port: 18123
-  - Database/Schema: smart_traffic_db
-  - Username: ren294
-  - Password: trungnghia294
+  - **Host**: *localhost*
+  - **Port**: *18123*
+  - **Database/Schema**: *smart_traffic_db*
+  - **Username**: *ren294*
+  - **Password**: *trungnghia294*
 
   <center>
       <img src="image/Dbeaver/CH_conn.png" width="400" />
@@ -703,17 +728,17 @@ Here are the ten DAGs and their respective functions:
   <center>
       <img src="image/Dbeaver/smart_traffic_db.png" width="900" />
   </center>
-- Use DBeaver’s SQL editor to execute queries, analyze data, and visualize query results directly within the tool.
+- Use `DBeaver`’s SQL editor to execute queries, analyze data, and visualize query results directly within the tool.
 
 **2.10. Trino via Dbeaver**
 
 - Connect to the `Trino` query engine via `DBeaver` by setting up a connection with the following details:
 
-  - Host: localhost
-  - Port: 8080
-  - Database/Schema: default
-  - Username: admin
-  - Password: (leave blank)
+  - **Host**: *localhost*
+  - **Port**: *8080*
+  - **Database/Schema**: *default*
+  - **Username**: *admin*
+  - **Password**: (leave blank)
 
   <center>
       <img src="image/Dbeaver/Trino_conn.png" width="400" />
@@ -751,6 +776,7 @@ Here are the ten DAGs and their respective functions:
 
   - **Username**: *ren294*
   - **Password**: *trungnghia294*
+
 - Import the pre-configured templates for charts, dashboards, datasets, and queries from the folder [superset/Template](superset/Template/). These templates are designed to provide seamless insights and accelerate your visualization setup.
 - After successfully importing, you will have access to a comprehensive collection of visualizations, including:
 
@@ -778,11 +804,11 @@ Here are the ten DAGs and their respective functions:
 - Open the `Metabase` by navigating to `http://localhost:3000` in your browser
 - Connect to the `Trino` query engine by setting up a connection with the following details:
 
-  - Host: trino-coordinator
-  - Port: 8080
-  - Database/Schema: hive
-  - Username: admin
-  - Password: (leave blank)
+  - **Host**: *trino-coordinator*
+  - **Port**: *8080*
+  - **Database/Schema**: *hive*
+  - **Username**: *admin*
+  - **Password**: (leave blank)
 
   <center>
       <img src="image/metabase/Conn.png" width="800" />
@@ -806,12 +832,14 @@ Here are the ten DAGs and their respective functions:
 
   - **Username**: *ren294*
   - **Password**: *trungnghia294*
+
 - Import the pre-built monitoring dashboards from the [grafana/Dashboard](grafana/Dashboard/) folder to instantly visualize critical system metrics and performance indicators.
 
   <center>
       <img src="image/Grafana/home.png" width="800" />
   </center>
-- Grafana enables real-time monitoring with customizable dashboards, allowing you to track system health, detect anomalies, and ensure smooth operation. The intuitive interface provides detailed insights into your infrastructure and application performance.
+
+- `Grafana` enables real-time monitoring with customizable dashboards, allowing you to track system health, detect anomalies, and ensure smooth operation. The intuitive interface provides detailed insights into your infrastructure and application performance.
 
 # Result
 
@@ -877,6 +905,8 @@ Analyze fuel consumption patterns and gas station transactions to better underst
 
 ## 3. Application for External User with Streamlit
 
+- Open the `Streamlit` Web UI by navigating to `http://localhost:8501` in your browser.
+
 ### Current Road Traffic Information
 
 Access live updates on traffic conditions for the current road, providing essential details for drivers.
@@ -940,7 +970,7 @@ Oversee MinIO storage performance, ensuring reliability and availability for dat
 Gain insights into the performance of Apache NiFi workflows, tracking throughput and data processing efficiency.
 
 <center>
-      <img src="image/Grafana/Nifi/Nifi.png" width="900" />
+      <img src="image/Grafana/nifi/nifi.png" width="900" />
   </center>
 
 ### Monitoring Redis
@@ -966,3 +996,9 @@ Ensure the stability of your containerized environment by monitoring Docker perf
 <center>
       <img src="image/Grafana/Docker/Docker.png" width="900" />
   </center>
+
+# Authors
+Nguyen Trung Nghia
+- Contact: trungnghia294@gmail.com
+- GitHub: [Ren294](https://github.com/Ren294)
+- Linkedln: [tnghia294](https://www.linkedin.com/in/tnghia294/)
