@@ -695,7 +695,33 @@ Here are the ten DAGs and their respective functions:
       <img src="image/Flink/Flink.png" width="900" />
   </center>
 
-**2.8. Redis**
+**2.8. Kafka via Redpanda UI**
+
+- Access the `Redpanda` Web UI by navigating to `http://localhost:1010` in your browser. This intuitive interface provides an efficient way to manage and monitor your Kafka infrastructure.
+
+  <center>
+      <img src="image/Redpanda/Overview.png" width="900" />
+  </center>
+
+  - **View Topics**: Explore the complete list of `Kafka` topics and monitor their performance.
+
+    <center>
+        <img src="image/Redpanda/Redpanda.png" width="900" />
+    </center>
+
+  - **Consumer Groups**: Analyze the list of active consumer groups and monitor their consumption patterns.
+
+    <center>
+        <img src="image/Redpanda/Consumer.png" width="900" />
+    </center>
+
+  - **Broker Configuration**: Inspect and manage the broker settings to optimize your `Kafka` cluster’s performance.
+
+    <center>
+        <img src="image/Redpanda/Broker.png" width="900" />
+    </center>
+
+**2.9. Redis**
 
 - Access the `Redis Insight` dashboard by visiting `http://localhost:6379` in your browser. `Redis Insight` allows you to inspect keys, monitor performance metrics, and visualize data structures like hashes, sets, and lists.
 
@@ -705,7 +731,7 @@ Here are the ten DAGs and their respective functions:
 
   - Use this dashboard to perform administrative tasks, such as analyzing key usage and monitoring latency, to ensure `Redis` is performing optimally for your application. The intuitive UI helps streamline debugging and data analysis.
 
-**2.9. Clikhouse via Dbeaver**
+**2.10. Clikhouse via Dbeaver**
 
 - To connect to the `ClickHouse` database through `DBeaver`, configure the connection using the following settings:
 
@@ -730,7 +756,7 @@ Here are the ten DAGs and their respective functions:
   </center>
 - Use `DBeaver`’s SQL editor to execute queries, analyze data, and visualize query results directly within the tool.
 
-**2.10. Trino via Dbeaver**
+**2.11. Trino via Dbeaver**
 
 - Connect to the `Trino` query engine via `DBeaver` by setting up a connection with the following details:
 
@@ -754,7 +780,7 @@ Here are the ten DAGs and their respective functions:
       <img src="image/Dbeaver/hudi-default.png" width="900" />
   </center>
 
-**2.10. Promotheus**
+**2.12. Promotheus**
 
 - Launch the `Prometheus` Web UI by navigating to `http://localhost:9090` in your browser.
 
