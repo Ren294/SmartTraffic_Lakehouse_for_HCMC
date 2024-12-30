@@ -5,8 +5,11 @@
 # Contact: trungnghia294@gmail.com
 # GitHub: Ren294
 ########################################################################################
-username='AKIAJC5AQUW4OXQYCRAQ'
-password='iYf4H8GSjY+HMfN70AMquj0+PRpYcgUl0uN01G7Z'
+
+# ____________________________________________________________________________
+username='AKIAJC5AQUW4OXQYCRAQ' # Replace with your Access Key ID
+password='iYf4H8GSjY+HMfN70AMquj0+PRpYcgUl0uN01G7Z' # Replace with your Secret Access Key
+# ----------------------------------------------------------------------------
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -29,30 +32,37 @@ chmod +x ./init/init/download_data.sh
 ./init/update_lakefs_credentials.sh "${username}" "${password}"
 check_status "Data downloaded"
 
-echo -e "\n${YELLOW}Step 1: Updating LakeFS credentials...${NC}"
+echo -e "\n${YELLOW}Step 2: Updating LakeFS credentials...${NC}"
 chmod +x ./init/update_lakefs_credentials.sh
 ./init/update_lakefs_credentials.sh "${username}" "${password}"
 check_status "LakeFS credentials update"
 
-echo -e "\n${YELLOW}Step 2: Initializing storage...${NC}"
+echo -e "\n${YELLOW}Step 3: Initializing storage...${NC}"
 chmod +x ./init/init_storage.sh
+chmod +x ./init/cleanup_storage.sh
+./init/cleanup_storage.sh
 ./init/init_storage.sh
 check_status "Storage initialization"
 
-echo -e "\n${YELLOW}Step 3: Setting up Airflow connector...${NC}"
+echo -e "\n${YELLOW}Step 4: Setting up Airflow connector...${NC}"
 chmod +x ./init/set_up_airflow_connector.sh
 ./init/set_up_airflow_connector.sh
 check_status "Airflow connector setup"
 
-echo -e "\n${YELLOW}Step 4: Creating Debezium connector...${NC}"
+echo -e "\n${YELLOW}Step 5: Creating Debezium connector...${NC}"
 chmod +x ./init/create_connector_debezium.sh
 ./init/create_connector_debezium.sh
 check_status "Debezium connector creation"
 
-echo -e "\n${YELLOW}Step 5: Uploading Flink jobs...${NC}"
+echo -e "\n${YELLOW}Step 6: Uploading Flink jobs...${NC}"
 chmod +x ./init/upload_flink_jobs.sh
 ./init/upload_flink_jobs.sh
 check_status "Flink jobs upload"
+
+echo -e "\n${YELLOW}Step 7: Submitting Spark streaming jobs...${NC}"
+chmod +x ./init/submit_spark_jobs.sh
+./init/submit_spark_jobs.sh
+check_status "Spark streaming jobs submission"
 
 echo -e "\n${GREEN}Initialization process completed successfully!${NC}"
 echo -e "\n${YELLOW}Performing final verification:${NC}"
