@@ -970,7 +970,7 @@ Oversee MinIO storage performance, ensuring reliability and availability for dat
 Gain insights into the performance of Apache NiFi workflows, tracking throughput and data processing efficiency.
 
 <center>
-      <img src="image/Grafana/nifi/nifi.png" width="900" />
+      <img src="image/Grafana/Nifi/nifi.png" width="900" />
   </center>
 
 ### Monitoring Redis
