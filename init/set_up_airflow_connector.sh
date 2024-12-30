@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ########################################################################################
 # Project: SmartTraffic_Lakehouse_for_HCMC
 # Author: Nguyen Trung Nghia (ren294)
