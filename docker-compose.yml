@@ -56,13 +56,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - airflow
-      - fss
-      - fs2
-      - a1
-      - a2
-      - fss1
-      - metabase
+      - ren294
 
   redis_airflow:
     image: redis:7.2-bookworm
@@ -79,14 +73,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - airflow
-      - all
-      - fss
-      - fs2
-      - a1
-      - a2
-      - fss1
-      - metabase
+      - ren294
 
   airflow-webserver:
     <<: *airflow-common
@@ -109,14 +96,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - airflow
-      - all
-      - fss
-      - fs2
-      - a1
-      - a2
-      - fss1
-      - metabase
+      - ren294
 
   airflow-scheduler:
     <<: *airflow-common
@@ -135,14 +115,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - airflow
-      - all
-      - fss
-      - fs2
-      - a1
-      - a2
-      - fss1
-      - metabase
+      - ren294
 
   airflow-worker:
     <<: *airflow-common
@@ -166,14 +139,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - airflow
-      - all
-      - fss
-      - fs2
-      - a1
-      - a2
-      - fss1
-      - metabase
+      - ren294
 
   airflow-triggerer:
     <<: *airflow-common
@@ -196,14 +162,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - airflow
-      - all
-      - fss
-      - fs2
-      - a1
-      - a2
-      - fss1
-      - metabase
+      - ren294
 
   airflow-init:
     <<: *airflow-common
@@ -269,14 +228,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - airflow
-      - all
-      - fss
-      - fs2
-      - a1
-      - a2
-      - fss1
-      - metabase
+      - ren294
 
   airflow-cli:
     <<: *airflow-common
@@ -312,11 +264,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - flower
-      - all
-      - fs
-      - fs2
-      - airflow
+      - ren294
 
   postgres-traffic:
     image: postgres:13
@@ -343,14 +291,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - db
-      - one1
-      - etl
-      - fss
-      - a2
-      - a3
-      - rd
-      - ol
+      - ren294
 
   schema-registry:
     image: confluentinc/cp-schema-registry:7.3.10
@@ -373,17 +314,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - one
-      - ex1
-      - fs1
-      - fs2
-      - one1
-      - a2
-      - a3
-      - fss1
-      - ol
-      - ol1
-      - kafka
+      - ren294
 
   zookeeper:
     image: confluentinc/cp-zookeeper:7.3.10
@@ -402,17 +333,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - one
-      - ex1
-      - fs1
-      - fs2
-      - one1
-      - a2
-      - a3
-      - fss1
-      - ol
-      - ol1
-      - kafka
+      - ren294
 
   broker:
     image: confluentinc/cp-kafka:7.3.10
@@ -449,17 +370,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - one
-      - ex1
-      - fs1
-      - fs2
-      - one1
-      - a2
-      - a3
-      - fss1
-      - ol
-      - ol1
-      - kafka
+      - ren294
 
   rest-proxy:
     image: confluentinc/cp-kafka-rest:7.3.10
@@ -477,17 +388,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - one
-      - ex1
-      - fs1
-      - fs2
-      - one1
-      - a2
-      - a3
-      - fss1
-      - ol
-      - ol1
-      - kafka
+      - ren294
 
   redpanda:
     image: redpandadata/console:v2.7.1
@@ -501,18 +402,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - redpanda
-      - ex1
-      - one
-      - fs1
-      - fs2
-      - one1
-      - a2
-      - a3
-      - fss1
-      - ol
-      - ol1
-      - kafka
+      - ren294
 
   debezium:
     image: debezium/connect:3.0.0.Final
@@ -553,10 +443,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - one
-      - a2
-      - a3
-      - ol
+      - ren294
 
   debezium-ui:
     image: debezium/debezium-ui:2.2
@@ -573,10 +460,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - one
-      - a2
-      - a3
-      - ol
+      - ren294
 
   nifi:
     image: nghia294/nifi:1.27
@@ -601,16 +485,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - nifi
-      - ex1
-      - one
-      - fs
-      - fs1
-      - fs2
-      - one1
-      - fss1
-      - ol
-      - kafka
+      - ren294
 
   minio:
     container_name: storage
@@ -629,21 +504,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - minio
-      - nifi
-      - etl
-      - one
-      - ex1
-      - fs
-      - fs2
-      - a1
-      - a2
-      - aa
-      - fss
-      - fss1
-      - hive
-      - metabase
-      - oll
+      - ren294
 
   lakefs:
     image: treeverse/lakefs:1.40
@@ -674,16 +535,7 @@ services:
       LAKEFS_INSTALLATION_ACCESS_KEY_ID: ren294
       LAKEFS_INSTALLATION_SECRET_ACCESS_KEY: trungnghia294
     profiles:
-      - fs
-      - fs2
-      - a1
-      - a2
-      - aa
-      - fss
-      - fss1
-      - hive
-      - metabase
-      - oll
+      - ren294
 
   lakefs-db:
     image: postgres:13
@@ -697,30 +549,25 @@ services:
     networks:
       - ren294_network
     profiles:
-      - fs
-      - fs2
-      - a1
-      - a2
-      - aa
-      - fss
-      - fss1
-      - hive
-      - metabase
-      - oll
+      - ren294
 
   jobmanager:
     image: flink:java8
     container_name: flink-jobmanager
+    hostname: jobmanager
     ports:
       - "8085:8081"
     command: jobmanager
     volumes:
-      - ./flink/job/:/opt/flink/usrlib/
+      - ./flink/job/:/opt/flink/usr/lib/
       # - ./flink/config/flink-conf.yaml:/opt/flink/conf/flink-conf.yaml
     environment:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
+        metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+        metrics.reporter.prom.factory.port: 9249
+        metrics.reporters: prom
         s3.endpoint: http://minio:9000
         s3.path.style.access: true
         s3.access-key: ren294
@@ -733,19 +580,12 @@ services:
     networks:
       - ren294_network
     profiles:
-      - flink
-      - ex1
-      - one
-      - fs1
-      - fs2
-      - one1
-      - a3
-      - fss1
-      - ol
+      - ren294
 
   taskmanager:
     image: flink:java8
     container_name: flink-taskmanager
+    hostname: taskmanager
     depends_on:
       - jobmanager
     command: taskmanager
@@ -757,6 +597,9 @@ services:
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
         taskmanager.numberOfTaskSlots: 2
+        metrics.reporter.prom.factory.class: org.apache.flink.metrics.prometheus.PrometheusReporterFactory
+        metrics.reporter.prom.factory.port: 9249
+        metrics.reporters: prom
         s3.endpoint: http://minio:9000
         s3.path.style.access: true
         s3.access-key: ren294
@@ -769,15 +612,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - flink
-      - ex1
-      - one
-      - fs1
-      - fs2
-      - one1
-      - a3
-      - fss1
-      - ol
+      - ren294
 
   redis:
     container_name: redis_traffic
@@ -793,18 +628,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - rd
-      - one
-      - fss
-      - fs1
-      - fs2
-      - one11
-      - a1
-      - a2
-      - a3
-      - fss1
-      - ol
-      - redis
+      - ren294
 
   redis-exporter:
     image: oliver006/redis_exporter
@@ -815,8 +639,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - rd
-      - redis
+      - ren294
 
   spark-master:
     image: nghia294/spark-arm64:v17.0
@@ -824,6 +647,7 @@ services:
     hostname: spark-master
     ports:
       - "8090:8080"
+      - "4044:4040"
       - "7077:7077"
       - "10003:10000"
       - "10004:10001"
@@ -845,16 +669,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - hdp_spark
-      - ex1
-      - fs2
-      - ch1
-      - a1
-      - a2
-      - fss
-      - fss1
-      - hive
-      - metabase
+      - ren294
 
   spark-worker:
     image: nghia294/spark-arm64:v17.0
@@ -862,7 +677,7 @@ services:
     depends_on:
       - spark-master
     ports:
-      - "8081:8081"
+      - "8081:8080"
     environment:
       - SPARK_MASTER=spark://spark-master:7077
       - SPARK_WORKLOAD=worker
@@ -876,16 +691,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - hdp_spark
-      - ex1
-      - fs2
-      - ch1
-      - a1
-      - a2
-      - fss
-      - fss1
-      - hive
-      - metabase
+      - ren294
 
   clickhouse-server:
     image: clickhouse/clickhouse-server:24
@@ -912,9 +718,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - ch
-      - ol
-      - ol1
+      - ren294
 
   ch-ui:
     image: ghcr.io/caioricciuti/ch-ui:latest
@@ -923,15 +727,27 @@ services:
       - clickhouse-server
     ports:
       - 5521:5521
-    environment:
-      VITE_CLICKHOUSE_URL: http://clickhouse-server:8123
-      VITE_CLICKHOUSE_USER: ren294
-      VITE_CLICKHOUSE_PASS: trungnghia294
+    # environment:
+    #   VITE_CLICKHOUSE_URL: http://clickhouse-server:8123
+    #   VITE_CLICKHOUSE_USER: ren294
+    #   VITE_CLICKHOUSE_PASS: trungnghia294
     networks:
       - ren294_network
     profiles:
-      - ch
-      - ol
+      - ren294
+
+  ch-exporter:
+    image: flant/clickhouse-exporter:latest
+    depends_on:
+      - clickhouse-server
+    ports:
+      - 9116:9116
+    environment:
+      scrape_uri: http://clickhouse-server:8123
+    networks:
+      - ren294_network
+    profiles:
+      - ren294
 
   trino:
     image: trinodb/trino:465
@@ -945,9 +761,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - hive
-      - metabase
-      - oll
+      - ren294
 
   metastore_db:
     image: postgres:13
@@ -963,9 +777,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - hive
-      - metabase
-      - oll
+      - ren294
 
   # hive-metastore:
   #   image: apache/hive:4.0.0
@@ -1034,9 +846,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - hive
-      - metabase
-      - oll
+      - ren294
 
   metabase:
     image: bobblybook/metabase:v0.49.13
@@ -1062,8 +872,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - metabase
-      - oll
+      - ren294
 
   db-metabase:
     image: postgres:13
@@ -1078,8 +887,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - metabase
-      - oll
+      - ren294
 
   superset:
     image: nghia294/superset:4.1.4
@@ -1093,7 +901,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - ol
+      - ren294
 
   streamlit:
     image: nghia294/traffic-streamlit-app:v1
@@ -1109,7 +917,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - rd
+      - ren294
 
   prometheus:
     image: prom/prometheus:v2.47.0
@@ -1123,13 +931,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - airflow
-      - monitoring
-      - nifi
-      - redis
-      - kafka
-      - minio
-      - spark
+      - ren294
 
   statsd-exporter:
     image: prom/statsd-exporter
@@ -1141,8 +943,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - monitoring
-      - airflow
+      - ren294
 
   node-exporter:
     image: prom/node-exporter:v1.6.1
@@ -1161,11 +962,11 @@ services:
     networks:
       - ren294_network
     profiles:
-      - monitoringa
+      - ren294
 
   cadvisor:
     image: gcr.io/cadvisor/cadvisor:v0.47.2
-    container_name: cadvisor
+    hostname: cadvisor
     volumes:
       - /:/rootfs:ro
       - /var/run:/var/run:ro
@@ -1177,8 +978,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - monitoringa
-      - airflow
+      - ren294
 
   # pushgateway:
   #   image: prom/pushgateway
@@ -1211,13 +1011,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - monitoring
-      - airflow
-      - nifi
-      - redis
-      - kafka
-      - minio
-      - spark
+      - ren294
 
   kafka-exporter:
     image: bitnami/kafka-exporter:1.7.0
@@ -1230,8 +1024,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - monitoring
-      - kafka
+      - ren294
 
   jmx-exporter-broker:
     image: bitnami/jmx-exporter:0.20.0
@@ -1247,8 +1040,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - monitoring
-      - kafka
+      - ren294
 
   jmx-exporter-controller:
     image: bitnami/jmx-exporter:0.20.0
@@ -1264,8 +1056,7 @@ services:
     networks:
       - ren294_network
     profiles:
-      - monitoring
-      - kafka
+      - ren294
 
 networks:
   ren294_network:
