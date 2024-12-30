@@ -81,8 +81,36 @@ update_yaml_file() {
     rm "${YAML_FILE}.tmp" "${YAML_FILE}.bak"
 }
 
+update_docker_compose() {
+    DOCKER_COMPOSE_FILE="./docker-compose.yml"
+    
+    echo -e "\n${YELLOW}Processing Docker Compose file: $DOCKER_COMPOSE_FILE${NC}"
+    
+    if [ ! -f "$DOCKER_COMPOSE_FILE" ]; then
+        echo -e "${YELLOW}Docker Compose file not found at: $DOCKER_COMPOSE_FILE${NC}"
+        return
+    fi
+    
+    cp "$DOCKER_COMPOSE_FILE" "${DOCKER_COMPOSE_FILE}.bak"
+    
+    sed -i.tmp \
+        -e "s|S3_ACCESS_KEY: .*|S3_ACCESS_KEY: $NEW_USERNAME|" \
+        -e "s|S3_SECRET_KEY: .*|S3_SECRET_KEY: $NEW_PASSWORD|" \
+        "$DOCKER_COMPOSE_FILE"
+    
+    if ! cmp -s "$DOCKER_COMPOSE_FILE" "${DOCKER_COMPOSE_FILE}.bak"; then
+        echo -e "${GREEN}✓ Updated credentials in: $DOCKER_COMPOSE_FILE${NC}"
+        MODIFIED_COUNT=$((MODIFIED_COUNT + 1))
+    else
+        echo -e "${YELLOW}No changes needed in: $DOCKER_COMPOSE_FILE${NC}"
+    fi
+
+    rm "${DOCKER_COMPOSE_FILE}.tmp" "${DOCKER_COMPOSE_FILE}.bak"
+}
+
 update_python_files
 update_yaml_file
+update_docker_compose
 
 echo -e "\n${GREEN}Operation completed!${NC}"
 echo -e "Total modified files: ${MODIFIED_COUNT}"
@@ -91,4 +119,5 @@ if [ $MODIFIED_COUNT -gt 0 ]; then
     echo -e "\n${YELLOW}Summary of changes:${NC}"
     echo "New access_key_id: $NEW_USERNAME"
     echo "New secret_access_key: $NEW_PASSWORD"
+    echo -e "\n${YELLOW}Note: If you've updated credentials in docker-compose.yml, you may need to restart your containers${NC}"
 fi
